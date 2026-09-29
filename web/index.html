@@ -6,6 +6,20 @@
 <title>Benchmark Viewer</title>
 <meta name="color-scheme" content="light dark">
 <script>
+// 挂在 /benchmark 这种没有结尾斜杠的地址下时，浏览器会把 css/style.css 解析到站点根。
+// 解析后续相对地址之前写入 base，让样式、脚本和接口都留在当前目录里。直接打开 / 时目录就是根，不受影响。
+(function () {
+  var path = location.pathname;
+  var href;
+  if (path.endsWith('/')) href = path;
+  else {
+    var leaf = path.slice(path.lastIndexOf('/') + 1);
+    href = leaf.indexOf('.') === -1 ? path + '/' : path.slice(0, path.lastIndexOf('/') + 1);
+  }
+  document.write('<base href="' + href + '">');
+})();
+</script>
+<script>
 // 在样式渲染前就写入用户选择的主题，避免深色用户每次打开先闪一下浅色；存储不可用时保持“跟随系统”。
 try {
   var saved = localStorage.getItem('bv-theme');

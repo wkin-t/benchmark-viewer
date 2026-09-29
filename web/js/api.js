@@ -70,7 +70,7 @@ function assertItemsShape(data, name) {
 
 export async function loadLeaderboard() {
   try {
-    const { data, fetchedAt, cacheStatus } = await getJson('/api/leaderboard');
+    const { data, fetchedAt, cacheStatus } = await getJson('api/leaderboard');
     assertLeaderboardShape(data);
     return { ok: true, raw: data, fetchedAt, stale: isStaleStatus(cacheStatus) };
   } catch (err) {
@@ -82,8 +82,8 @@ export async function loadLeaderboard() {
 export async function loadBenchlm() {
   try {
     const [models, pricing] = await Promise.all([
-      getJson('/api/benchlm/models.json'),
-      getJson('/api/benchlm/pricing.json'),
+      getJson('api/benchlm/models.json'),
+      getJson('api/benchlm/pricing.json'),
     ]);
     assertItemsShape(models.data, 'BenchLM 模型文件');
     assertItemsShape(pricing.data, 'BenchLM 价格文件');
@@ -122,7 +122,7 @@ export async function loadAll() {
 // 网络失败、超时与非 JSON 响应统一折成 { ok:false }，调用方不需要再区分抛出还是返回。
 export async function postRefresh() {
   try {
-    const res = await fetchWithTimeout('/api/refresh', { method: 'POST', cache: 'no-store' }, REFRESH_TIMEOUT_MS);
+    const res = await fetchWithTimeout('api/refresh', { method: 'POST', cache: 'no-store' }, REFRESH_TIMEOUT_MS);
     if (!res.ok) return { ok: false, error: `服务返回 ${res.status}` };
     let result;
     try {
