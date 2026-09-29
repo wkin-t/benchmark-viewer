@@ -1,0 +1,17 @@
+{
+  "name": "benchmark-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "description": "Terminal-Bench 4.0 成本与分数散点图（局域网内部工具）",
+  "scripts": {
+    "test:unit": "node --test \"tests/unit/*.test.js\"",
+    "test:integration": "node --test --test-concurrency=1 \"tests/integration/*.test.mjs\"",
+    "test:smoke": "node --test --test-concurrency=1 \"tests/smoke/*.test.mjs\"",
+    "test": "pnpm run test:unit && pnpm run test:integration"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}

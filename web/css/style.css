@@ -1,0 +1,1371 @@
+/* 恒星巡天图谱与赫罗主序带（Astronomy Catalog & Hertzsprung–Russell Diagram）
+   高密度天文台工作台：帕累托前沿映射为赫罗主序带（Main Sequence），各模型如恒星分布在光谱坐标中。
+   深色为夜间天文台控制台，浅色为天文手稿图谱。内置 Inter 与 JetBrains Mono 开源字体，数字完全等宽。 */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/inter-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-latin.woff2') format('woff2');
+}
+
+:root {
+  color-scheme: light;
+  --paper: #dce7f2;
+  --ink: #142033;
+  --surface: #f4f8fb;
+  --surface-subtle: #e5eef6;
+  --surface-raised: #c5d5e6;
+  --line: #b4c7da;
+  --line-strong: #6d8aa6;
+  --grid: #e8f0f7;
+  --accent: #0f6a78;
+  --accent-ink: #f3fbfc;
+  --frontier: #9a4a10;
+  --frontier-ink: #fff7ef;
+  --amber: #8f4b12;
+  --amber-ink: #3f2208;
+  --muted: #4c6276;
+  --focus: #0f6a78;
+  --danger: #b42318;
+  --shadow: 0 1px 3px rgba(20, 32, 51, 0.08);
+
+  /* 厂商光谱恒星色系（日光手稿模式） */
+  --v-anthropic: #b93808;
+  --v-openai: #0284c7;
+  --v-google: #1d4ed8;
+  --v-xai: #6d28d9;
+  --v-z-ai: #a16207;
+  --v-meta: #475569;
+  --v-deepseek: #4338ca;
+  --v-moonshot-ai: #be185d;
+  --v-minimax: #15803d;
+  --v-xiaomi: #c2410c;
+  --v-stepfun: #be123c;
+  --v-mistral: #92400e;
+  --v-thinking-machines-lab: #4f46e5;
+  --v-other: #64748b;
+
+  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", "Cascadia Code", Consolas, Menlo, monospace;
+  --font-num: 'Inter', var(--font-body);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #07141c;
+  --ink: #d5efe8;
+  --surface: #0e2430;
+  --surface-subtle: #14303c;
+  --surface-raised: #1a4252;
+  --line: #1d4c58;
+  --line-strong: #3e7580;
+  --grid: #0c2832;
+  --accent: #3ec4c0;
+  --accent-ink: #042226;
+  --frontier: #e8b03a;
+  --frontier-ink: #1c1404;
+  --amber: #e6b15c;
+  --amber-ink: #2a1c08;
+  --muted: #8eb4b6;
+  --focus: #7ee0d4;
+  --danger: #ff8d7a;
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+
+  /* 厂商光谱恒星色系（暗场高光辐射光谱） */
+  --v-anthropic: #fb923c;
+  --v-openai: #22d3ee;
+  --v-google: #60a5fa;
+  --v-xai: #a78bfa;
+  --v-z-ai: #facc15;
+  --v-meta: #94a3b8;
+  --v-deepseek: #818cf8;
+  --v-moonshot-ai: #f472b6;
+  --v-minimax: #4ade80;
+  --v-xiaomi: #fb923c;
+  --v-stepfun: #fb7185;
+  --v-mistral: #fcd34d;
+  --v-thinking-machines-lab: #a5b4fc;
+  --v-other: #94a3b8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #07141c;
+    --ink: #d5efe8;
+    --surface: #0e2430;
+    --surface-subtle: #14303c;
+    --surface-raised: #1a4252;
+    --line: #1d4c58;
+    --line-strong: #3e7580;
+    --grid: #0c2832;
+    --accent: #3ec4c0;
+    --accent-ink: #042226;
+    --frontier: #e8b03a;
+    --frontier-ink: #1c1404;
+    --amber: #e6b15c;
+    --amber-ink: #2a1c08;
+    --muted: #8eb4b6;
+    --focus: #7ee0d4;
+    --danger: #ff8d7a;
+    --shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+
+    --v-anthropic: #fb923c;
+    --v-openai: #22d3ee;
+    --v-google: #60a5fa;
+    --v-xai: #a78bfa;
+    --v-z-ai: #facc15;
+    --v-meta: #94a3b8;
+    --v-deepseek: #818cf8;
+    --v-moonshot-ai: #f472b6;
+    --v-minimax: #4ade80;
+    --v-xiaomi: #fb923c;
+    --v-stepfun: #fb7185;
+    --v-mistral: #fcd34d;
+    --v-thinking-machines-lab: #a5b4fc;
+    --v-other: #94a3b8;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scrollbar-gutter: stable;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
+}
+
+a { color: var(--accent); text-underline-offset: 2px; }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* 纯粹等宽数字，确保天文坐标与价格在列对齐时不产生字宽抖动 */
+.num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-weight: 600;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 8px 14px;
+  z-index: 100;
+  border-radius: 2px;
+  border: 1px solid var(--line-strong);
+}
+.skip-link:focus { left: 8px; top: 8px; }
+
+[hidden] { display: none !important; }
+
+.topbar, main, .banner-inner {
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.topbar {
+  padding-top: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reticle-mark {
+  flex: none;
+  color: var(--accent);
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+/* 天文仪器分段选择器（Instrument Band Selector） */
+.seg {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  padding: 1px;
+}
+
+.seg button {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 1px;
+  padding: 5px 12px;
+  min-height: 28px;
+  cursor: pointer;
+  transition: color 0.12s ease, background-color 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seg button:hover { color: var(--ink); }
+
+.seg button[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.seg button[aria-pressed="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--frontier);
+}
+
+/* 仪器控制按钮（Instrument Key） */
+.btn {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  padding: 5px 12px;
+  cursor: pointer;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface-subtle);
+}
+
+.btn:disabled {
+  color: var(--muted);
+  border-color: var(--line);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn.primary {
+  background: var(--surface-subtle);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.btn.primary::before {
+  content: "⌖";
+  font-size: 13px;
+  line-height: 1;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn.primary:disabled {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line);
+  font-weight: 500;
+}
+
+/* 顶部遥测与观测事实胶囊条（Observatory Telemetry Strip） */
+.info-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  min-height: 38px;
+}
+
+.info-row:hover {
+  border-color: var(--line-strong);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+}
+
+.fact {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+}
+
+.fact:not(:last-child)::after {
+  content: "·";
+  margin-left: 10px;
+  color: var(--line-strong);
+  font-weight: 700;
+}
+
+.fact dt {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.fact dd {
+  margin: 0;
+  font-family: var(--font-num);
+  font-size: 12.5px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.fact dd.num {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.info-plain {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.flags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.flag {
+  margin: 0;
+  padding: 2px 8px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.flag.warn {
+  border-color: var(--amber);
+  color: var(--amber-ink);
+  font-weight: 600;
+  background: rgba(232, 176, 58, 0.12);
+}
+
+#sync-btn {
+  margin-left: auto;
+  min-height: 26px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 2px;
+}
+
+.sync-msg {
+  margin-top: 6px;
+  text-align: right;
+  min-height: 0;
+}
+
+.sync-msg:empty {
+  display: none;
+}
+
+.sync-msg .msg {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  border: 1px solid var(--accent);
+  background: var(--surface-subtle);
+  color: var(--ink);
+}
+
+.msg.partial, .msg.cooldown { border-color: var(--line-strong); color: var(--muted); }
+.msg.failed { border-color: var(--danger); color: var(--danger); font-weight: 600; background: rgba(220, 38, 38, 0.08); }
+
+.banner {
+  margin-top: 0;
+  background: rgba(232, 176, 58, 0.10);
+  border-top: 0;
+  border-bottom: 1px solid var(--amber);
+  color: var(--amber-ink);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.banner-inner { padding-top: 8px; padding-bottom: 8px; max-width: 1320px; }
+
+main { padding-top: 6px; padding-bottom: 8px; }
+
+/* 舞台：桌面端左侧预算视差标尺（320px），右侧坐标散点图 */
+.stage {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 0 24px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.stage.no-ladder { grid-template-columns: minmax(0, 1fr); }
+
+/* 预算标尺读数仪（Astrometric Horizon Gauge） */
+.ladder-title {
+  margin: 0 0 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ladder-title::before {
+  content: "▮";
+  font-size: 10px;
+  color: var(--frontier);
+}
+
+/* 垂直连续标尺轨 */
+.tiers {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 0 0 12px;
+  position: relative;
+  border-left: 2px solid var(--line-strong);
+}
+
+.tier {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* 标尺刻度指向星图的游标效果 */
+.tier::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 16px;
+  width: 12px;
+  height: 2px;
+  background: var(--line-strong);
+  transform-origin: left center;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+
+.tier:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-subtle);
+}
+
+.tier:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.tier.is-active {
+  border-color: var(--frontier);
+  background: rgba(154, 74, 16, 0.10);
+  box-shadow: 0 0 0 1px var(--frontier), 0 2px 8px rgba(154, 74, 16, 0.16);
+}
+
+.tier.is-active::before {
+  background: var(--frontier);
+  transform: scaleX(1.17);
+}
+
+.tier-price {
+  display: block;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--frontier);
+  letter-spacing: -0.01em;
+}
+
+.tier-price .cap {
+  display: inline;
+  font-size: 19px;
+  margin-right: 2px;
+}
+
+.tier-body { display: block; margin-top: 4px; }
+
+.tier-best { display: block; }
+.tier-best + .tier-best { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+
+.tier-model {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.tier-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  margin-top: 2px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0 5px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  line-height: 16px;
+  color: var(--ink);
+  background: var(--surface-subtle);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.tier-figs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  margin-top: 4px;
+}
+
+.tier-score {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.tier-cost { font-family: var(--font-body); color: var(--muted); font-size: 12px; }
+.tier-cost .num { font-size: 12.5px; color: var(--ink); font-weight: 600; }
+.tier-none { display: block; margin-top: 6px; font-family: var(--font-body); font-size: 18px; color: var(--muted); }
+.ladder-hint { margin: 10px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.5; max-width: 40em; }
+
+/* 图区（Astrometric Reticle Frame） */
+.chart-area { min-width: 0; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 6px;
+}
+
+.toolbar-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-left: auto;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input { width: 14px; height: 14px; accent-color: var(--accent); margin: 0; }
+
+/* 筛选下拉 */
+.dropdown { position: relative; }
+.dropdown-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.dropdown-btn .caret { font-size: 10px; color: var(--muted); }
+
+.dropdown-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(70vh, 520px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  box-shadow: var(--shadow);
+}
+
+.dropdown-list { overflow-y: auto; padding: 6px 12px; flex: 1 1 auto; }
+
+.dropdown-foot {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-subtle);
+}
+
+.dropdown-foot .btn { flex: 1; }
+
+.model-row { padding: 6px 0 8px; border-bottom: 1px solid var(--grid); }
+.model-row:last-child { border-bottom: 0; }
+
+.model-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.model-head label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  cursor: pointer;
+  min-width: 0;
+  font-size: 12.5px;
+}
+
+.model-head input { width: 14px; height: 14px; accent-color: var(--accent); flex: none; margin: 0; }
+.model-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.count { margin-left: auto; font-family: var(--font-mono); color: var(--muted); font-size: 11px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+
+.effort-btns { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 0 0 22px; }
+
+.effort-btn {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink);
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 1px 6px;
+  cursor: pointer;
+  min-height: 22px;
+}
+
+.effort-btn[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.effort-btn:disabled {
+  text-decoration: line-through;
+  color: var(--muted);
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--line);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 图例（Legend & Interactive Controls） */
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.legend-vendors {
+  align-items: center;
+  gap: 6px 8px;
+  padding-top: 2px;
+}
+
+.legend-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-item svg { flex: none; }
+
+.legend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.legend-btn:hover {
+  background: var(--surface-subtle);
+  border-color: var(--line-strong);
+}
+
+.legend-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.frontier-toggle.is-active {
+  border-color: var(--frontier);
+  background: rgba(154, 74, 16, 0.10);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.frontier-toggle.is-active:hover {
+  background: rgba(154, 74, 16, 0.16);
+}
+
+.frontier-toggle.is-muted {
+  opacity: 0.6;
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.legend-action-hint {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.frontier-toggle.is-active .legend-action-hint {
+  border-color: var(--frontier);
+  color: var(--frontier);
+}
+
+.vendor-chip {
+  cursor: pointer;
+}
+
+.vendor-chip.is-active {
+  background: var(--surface);
+  border-color: var(--line-strong);
+}
+
+.vendor-chip.is-muted {
+  opacity: 0.48;
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+}
+
+.vendor-chip.is-muted .dot {
+  opacity: 0.35;
+  filter: grayscale(0.8);
+}
+
+.vendor-chip.is-muted .chip-count {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.vendor-chip:hover {
+  border-color: var(--ink);
+  background: var(--surface-subtle);
+}
+
+.vendor-chip.is-muted:hover {
+  opacity: 0.85;
+  border-color: var(--line-strong);
+}
+
+.vendor-chip .chip-count {
+  font-size: 10.5px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  color: var(--muted);
+}
+
+/* 图表滚动容器：天文坐标视窗（Astrometric Coordinate Stage） */
+.chart-scroll {
+  margin-top: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: inset 0 0 0 1px var(--line);
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.chart-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chart-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chart-scroll::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 3px;
+}
+
+.chart-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.scroll-hint { display: none; margin: 4px 0 0; font-family: var(--font-body); font-size: 11px; color: var(--muted); text-align: right; }
+#chart svg { display: block; max-width: none; overflow: visible; }
+
+.axis text { fill: var(--muted); font-family: var(--font-num); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.axis line, .axis path { stroke: var(--line-strong); stroke-width: 1; }
+.grid line { stroke: var(--grid); stroke-dasharray: 2 4; stroke-width: 1; }
+.grid .zero line { stroke: var(--line-strong); stroke-dasharray: none; stroke-width: 1.5; }
+.grid path { display: none; }
+.y-title { fill: var(--muted); font-family: var(--font-body); font-size: 12px; font-weight: 500; letter-spacing: 0.02em; }
+
+/* 十字准星与坐标投影线 */
+.crosshairs { pointer-events: none; }
+.crosshair-line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* 点与轨迹高亮 */
+.pt {
+  cursor: pointer;
+}
+.pt:focus-visible { outline: none; }
+.pt:focus-visible .pt-mark,
+.pt:hover .pt-mark {
+  stroke: var(--focus);
+  stroke-width: 3;
+}
+.best-ring {
+  fill: none;
+  stroke: var(--frontier);
+  stroke-width: 2;
+  opacity: 0;
+}
+.pt.is-best .best-ring { opacity: 1; }
+.pt:hover .best-ring,
+.pt:focus-visible .best-ring {
+  opacity: 0.7;
+}
+
+.trajectory-line {}
+
+/* 厂商隔离/聚焦模式 */
+.chart-svg.has-vendor-focus .pt:not(.vendor-match),
+.chart-svg.has-vendor-focus .trajectory-line:not(.vendor-match),
+.chart-svg.has-vendor-focus .lbl:not(.vendor-match) {
+  opacity: 0.15;
+  filter: grayscale(0.5);
+}
+
+/* 同模型档位轨迹高亮模式 */
+.chart-svg.has-model-focus .pt:not(.model-match),
+.chart-svg.has-model-focus .trajectory-line:not(.model-match),
+.chart-svg.has-model-focus .lbl:not(.model-match) {
+  opacity: 0.18;
+}
+.trajectory-line.model-match {
+  stroke-width: 3.5 !important;
+  stroke-opacity: 1 !important;
+}
+
+/* 前沿悬停高亮 */
+.chart-svg.highlight-frontier .pt:not(.on-frontier),
+.chart-svg.highlight-frontier .trajectory-line,
+.chart-svg.highlight-frontier .lbl:not(.on-frontier) {
+  opacity: 0.25;
+}
+.chart-svg.highlight-frontier .frontier-line {
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 4px var(--frontier));
+}
+
+/* 前沿隐藏状态 */
+.chart-svg.hide-frontier .frontier-line,
+.chart-svg.hide-frontier .frontier-note {
+  display: none !important;
+}
+.chart-svg.hide-frontier .pt-mark.on-frontier-mark {
+  stroke: var(--paper) !important;
+  stroke-width: 1.5 !important;
+}
+
+/* 预算梯双向联动 */
+.tier.linked-highlight {
+  border-color: var(--frontier) !important;
+  background: rgba(154, 74, 16, 0.10) !important;
+  box-shadow: 0 0 0 1px var(--frontier), 0 2px 8px rgba(154, 74, 16, 0.16);
+}
+.tier.linked-highlight::before {
+  background: var(--frontier);
+  transform: scaleX(1.17);
+}
+
+.lbl { pointer-events: none; }
+.lbl .name {
+  fill: var(--ink);
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+.lbl .sub {
+  fill: var(--muted);
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+
+/* 测绘引线 */
+.lbl-line {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+/* 帕累托主序带连接线 */
+.frontier-line {
+  fill: none;
+  stroke: var(--frontier);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.frontier-note {
+  fill: var(--frontier);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+}
+
+.ci-bar { pointer-events: none; }
+.ci-bar line { stroke: var(--ink); stroke-width: 1.5; }
+
+/* 预算梯交互高亮 */
+.budget-mark { opacity: 0; pointer-events: none; }
+.budget-mark.is-on { opacity: 1; }
+.budget-mark .zone { fill: var(--frontier); fill-opacity: 0.08; }
+.budget-mark .ruler { stroke: var(--frontier); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.budget-mark text { fill: var(--frontier); font-family: var(--font-num); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.pt.is-out { opacity: 0.25; }
+
+.x-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  text-align: center;
+}
+
+.info-icon {
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  padding: 6px;
+  cursor: help;
+  flex: none;
+}
+
+/* 悬停提示 Tooltip */
+.tooltip {
+  position: fixed;
+  z-index: 60;
+  max-width: min(360px, calc(100vw - 16px));
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  box-shadow: var(--shadow);
+  padding: 8px 12px;
+  pointer-events: none;
+}
+
+.tooltip .t-title { font-weight: 600; margin-bottom: 4px; font-size: 13px; }
+.tooltip dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 12px; }
+.tooltip dt { color: var(--muted); font-family: var(--font-body); }
+.tooltip dd { margin: 0; font-family: var(--font-num); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* 底层控制台面板（Instrument Telemetry & Provenance Dock） */
+.dock-panel {
+  margin-top: 24px;
+  margin-bottom: 36px;
+}
+
+.dock-card {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 0 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 18px 22px;
+  box-shadow: var(--shadow);
+}
+
+.dock-col {
+  min-width: 0;
+}
+
+.dock-divider {
+  background: var(--line);
+  width: 1px;
+  height: 100%;
+}
+
+.dock-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+
+.dock-icon {
+  flex: none;
+  color: var(--accent);
+}
+
+.dock-heading {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.notes {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.notes p {
+  margin: 0 0 8px;
+}
+
+.notes p:last-child {
+  margin-bottom: 0;
+}
+
+.excluded-trigger {
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted var(--muted);
+  padding: 0;
+  cursor: help;
+}
+
+.warn-note {
+  border: 1px solid var(--amber);
+  border-radius: 2px;
+  padding: 6px 12px;
+  color: var(--amber-ink);
+  font-weight: 600;
+  background: rgba(232, 176, 58, 0.10);
+}
+
+/* 状态面板（加载、错误与空态） */
+.state-panel {
+  padding: 40px 16px;
+  max-width: 48ch;
+  color: var(--muted);
+}
+
+.state-panel h2 { color: var(--ink); font-family: var(--font-body); font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+.state-panel p { margin: 0; font-size: 13px; line-height: 1.5; }
+.state-panel.is-error {
+  border: 1px solid var(--danger);
+  border-radius: 2px;
+  padding: 24px 20px;
+  background: rgba(220, 38, 38, 0.04);
+}
+.state-panel .btn { margin: 14px 8px 0 0; }
+
+.footer {
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.footer p {
+  margin: 0 0 8px;
+  max-width: none;
+  line-height: 1.6;
+}
+
+.footer p:last-child {
+  margin-bottom: 0;
+}
+
+/* 平板响应式（<= 1000px）：预算标尺横向置于图表上方，三档等宽横格 */
+@media (max-width: 1000px) {
+  .stage { grid-template-columns: minmax(0, 1fr); gap: 16px 0; }
+  .tiers {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin-bottom: 6px;
+    border-left: 0;
+    padding-left: 0;
+    border-top: 2px solid var(--line-strong);
+    padding-top: 8px;
+  }
+  .tier {
+    border-radius: 0;
+    margin-bottom: 0;
+    border: 1px solid var(--line);
+    height: 100%;
+    padding: 10px 12px;
+  }
+  .tier::before {
+    left: 14px;
+    top: -9px;
+    width: 2px;
+    height: 8px;
+  }
+  .tiers li:first-child .tier { border-radius: 2px 0 0 2px; }
+  .tiers li:last-child .tier { border-radius: 0 2px 2px 0; }
+  .tiers li + li .tier { border-left: 0; }
+  .tiers li + li .tier.is-active { border-left: 1px solid var(--frontier); box-shadow: inset 0 0 0 1px var(--frontier); }
+  .ladder-hint { max-width: 68ch; }
+}
+
+@media (max-width: 900px) {
+  .dock-card {
+    grid-template-columns: 1fr;
+    gap: 16px 0;
+    padding: 16px 18px;
+  }
+  .dock-divider {
+    display: none;
+  }
+}
+
+/* 手机响应式（<= 600px）：预算标尺三档竖排，左右结构（价格在左，详情在右） */
+@media (max-width: 600px) {
+  .topbar, main, .banner-inner { padding-left: 16px; padding-right: 16px; }
+  .tiers {
+    display: block;
+    border-left: 2px solid var(--line-strong);
+    padding-left: 10px;
+    border-top: 0;
+    padding-top: 0;
+  }
+  .tier {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 0 12px;
+    padding: 10px 12px;
+    height: auto;
+    border-radius: 2px;
+    margin-bottom: 8px;
+    border: 1px solid var(--line);
+  }
+  .tier::before {
+    left: -11px;
+    top: 16px;
+    width: 10px;
+    height: 2px;
+  }
+  .tiers li:first-child .tier { border-radius: 2px; }
+  .tiers li:last-child .tier { border-radius: 2px; }
+  .tiers li + li .tier { border-top: 1px solid var(--line); }
+  .tiers li + li .tier.is-active { box-shadow: inset 0 0 0 1px var(--frontier); }
+  .tier-price { font-size: 28px; }
+  .tier-body { margin-top: 0; }
+  .toolbar-right { margin-left: 0; width: 100%; justify-content: space-between; position: relative; }
+  .dropdown { position: static; }
+  .dropdown-panel { left: 0; right: 0; width: auto; }
+  .scroll-hint { display: block; }
+  .info-row { padding: 8px 10px; }
+  .facts { gap: 4px 10px; }
+  #sync-btn { margin-left: 0; width: 100%; }
+  .sync-msg { text-align: center; }
+  .stage { margin-top: 16px; }
+}
+
+@media (pointer: coarse) {
+  .seg button, .btn, .switch { min-height: 40px; }
+}
+
+/* 动效预算：克制微动效，prefers-reduced-motion 严格遵循 */
+@media (prefers-reduced-motion: no-preference) {
+  .budget-mark, .pt { transition: opacity 0.12s linear; }
+  .sync-msg .msg { animation: msg-in 0.2s ease-out; }
+  .legend-btn, .vendor-chip { transition: background-color 0.12s ease, border-color 0.12s ease; }
+  .trajectory-line { transition: stroke-width 0.15s ease, stroke-opacity 0.15s ease; }
+  .best-ring { transition: transform 0.15s ease, opacity 0.15s ease; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    transition: none !important;
+  }
+}
+
+@keyframes msg-in { from { opacity: 0; } to { opacity: 1; } }

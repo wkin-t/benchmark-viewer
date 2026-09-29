@@ -1,0 +1,28 @@
+Required Notice: Copyright 2026 Wah (https://github.com/wkin-t)
+
+本仓库的程序以 PolyForm Noncommercial License 1.0.0 授权，见 LICENSE。
+这不是开源许可证：可以公开源码、修改和再分发，但只限非商业目的。
+
+第三方：
+
+- D3 7.9.0（web/vendor/d3.min.js）
+  Copyright 2010-2023 Mike Bostock
+  ISC 许可，全文见 web/vendor/LICENSE-d3.txt。
+
+- Inter、JetBrains Mono（web/fonts/）
+  SIL Open Font License 1.1，全文与版权声明见 web/fonts/OFL.txt。
+
+- tests/fixtures/models.json、tests/fixtures/pricing.json
+  是 BenchLM 数据集的副本，许可为 CC BY-NC 4.0。
+  https://benchlm.ai/data
+  https://creativecommons.org/licenses/by-nc/4.0/
+  署名：Data from BenchLM.ai。仓库对成本做了计算（总成本 ÷ 试验次数）并转换了格式。
+  商业使用须另行取得 BenchLM 的许可：https://benchlm.ai/contact
+  其中的 Artificial Analysis 分数由 BenchLM 汇总；原始成绩属于各发布方。
+
+- tests/fixtures/leaderboard.json
+  是 Harbor Hub 公开榜单接口的测试样例，不是本仓库重新授权的数据。
+  来源：https://hub.harborframework.com/
+  服务条款：https://hub.harborframework.com/terms
+
+- 运行镜像基于 openresty/openresty:alpine，其上游许可随镜像分发，不由本 LICENSE 覆盖。

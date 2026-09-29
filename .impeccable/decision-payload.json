@@ -1,0 +1,125 @@
+{
+  "title": "选择 Benchmark Viewer 的视觉世界方向",
+  "question": "骰子为我们指定了方向：Link-Budget Engineering Sheet（链路预算工程图谱）。请选择保持该方向、选用备选方案，或重新摇骰。",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Link-Budget Engineering Sheet（链路预算工程图谱）",
+      "kicker": "THE ROLL",
+      "lineage": "电信射频频谱分配与链路预算图表册（IEEE / ITU 规范）",
+      "thesis": "将模型选型视为工程链路预算：在有限的单任务预算上限内，获取最大的基准准确率容量。",
+      "palette": [
+        "#0F172A",
+        "#1E40AF",
+        "#059669",
+        "#F8FAFC"
+      ],
+      "materials": [
+        "精密标尺网格",
+        "校准刻度线",
+        "紧凑数据标牌"
+      ],
+      "viewport": "首屏顶部直接呈现 ≤$5、≤$10、≤$15 预算梯决策卡，下方紧跟高密度阶梯最优前沿散点图与实时同步状态。",
+      "risk": "若排版节奏控制不当，可能略显工业冷硬；但最契合工程师高密度决策场景。",
+      "raised": [
+        {
+          "from": "challenger-orienteering",
+          "raise": "融入定向越野图的高辨识度图例标线与路线分段指引，强化最优前沿的行进感。"
+        },
+        {
+          "from": "challenger-datamatics",
+          "raise": "继承纯粹数据密度与无冗余像素网格对齐，剔除一切装饰性空隙。"
+        }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "Astronomy Catalog & H-R Diagram（恒星巡天图谱与赫罗主序带）",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "现代天体物理光谱巡天手册与赫罗图",
+      "thesis": "把模型分布映射为天体星图，帕累托最优前沿就是清晰耀眼的「主序带」。",
+      "palette": [
+        "#0B0F19",
+        "#38BDF8",
+        "#F59E0B",
+        "#E2E8F0"
+      ],
+      "materials": [
+        "深空坐标网格",
+        "发光天体点阵",
+        "细线光谱标尺"
+      ],
+      "viewport": "深色为主调的天体坐标系，各模型如恒星分布，主序前沿如一道冷光标线穿过散点。",
+      "risk": "天体物理图表在行业里较容易被联想到学术论文，略缺乏即时的采购预算感。"
+    },
+    {
+      "id": "challenger-orienteering",
+      "label": "Orienteering Route Map（越野定向等高线地图）",
+      "verdict": "competitive",
+      "lineage": "国际定向越野联合会标准等高线与检查点地图",
+      "thesis": "把每任务成本转化为等高地形，帕累托前沿是一条穿越检查点的紫色最佳越野路线。",
+      "palette": [
+        "#2D3748",
+        "#7C3AED",
+        "#10B981",
+        "#F7FAFC"
+      ],
+      "materials": [
+        "等高线纹理",
+        "紫色路线覆盖层",
+        "符号化检查点"
+      ],
+      "viewport": "散点图带有轻量等高线成本分层底纹，最优前沿以高对比路线形式连结各预算检查点。",
+      "case": "在寻路与前沿表达上极其生动，但在纯粹数字预算决策效率上略逊于链路预算表。",
+      "risk": "底纹若不够克制容易在窄屏下造成视觉疲劳。"
+    },
+    {
+      "id": "challenger-datamatics",
+      "label": "Datamatics Precision Matrix（极致数据阵列）",
+      "verdict": "competitive",
+      "lineage": "极简纯黑白高密度数据频谱与条码网格",
+      "thesis": "彻底放弃多余色系，以极高数据墨水比、像素级对齐和纯粹单色灰阶呈现纯粹事实。",
+      "palette": [
+        "#000000",
+        "#FFFFFF",
+        "#71717A",
+        "#27272A"
+      ],
+      "materials": [
+        "发丝级细线",
+        "等宽纯数字阵列",
+        "高反差反白焦点"
+      ],
+      "viewport": "整屏如精密测量仪器的原始输出，所有模型与预算数据以高反差网格罗列。",
+      "case": "极度硬核且适合极客，但在多模型多档位并存时缺少颜色区分度。",
+      "risk": "缺乏多色系区分，同厂商不同档位的连线识别门槛偏高。"
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": false
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "The Standard Engineering Dashboard（经典工程仪表盘标准）",
+    "thesis": "通用现代企业级控制台风格，克制的 Slate 灰阶与标准技术蓝。",
+    "palette": [
+      "#FFFFFF",
+      "#0F172A",
+      "#2563EB"
+    ],
+    "materials": [
+      "微圆角卡片",
+      "干净中性灰色边框"
+    ],
+    "viewport": "标准的顶栏、侧边或顶部筛选、图表卡片与下方数据表。",
+    "risk": "虽安全稳定，但缺乏解决单一预算决策问题的强烈视觉特征。"
+  },
+  "steer": true
+}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benchmark Viewer</title>
+<meta name="color-scheme" content="light dark">
+<script>
+// 在样式渲染前就写入用户选择的主题，避免深色用户每次打开先闪一下浅色；存储不可用时保持“跟随系统”。
+try {
+  var saved = localStorage.getItem('bv-theme');
+  if (saved === 'light' || saved === 'dark') document.documentElement.setAttribute('data-theme', saved);
+} catch (e) {}
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 14V11H5V7H9V3H15' fill='none' stroke='%23e8b03a' stroke-width='2'/%3E%3Ccircle cx='15' cy='3' r='2' fill='%233ec4c0'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#chart-area">跳到图表</a>
+
+<header class="topbar">
+  <div class="title-row">
+    <div class="brand">
+      <svg class="reticle-mark" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" fill="none">
+        <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2 2"/>
+        <circle cx="14" cy="14" r="7" stroke="currentColor" stroke-opacity="0.55" stroke-width="1"/>
+        <line x1="14" y1="0" x2="14" y2="28" stroke="currentColor" stroke-opacity="0.45" stroke-width="1"/>
+        <line x1="0" y1="14" x2="28" y2="14" stroke="currentColor" stroke-opacity="0.45" stroke-width="1"/>
+        <path d="M4 22L11 15L17 11L24 6" stroke="var(--frontier)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="24" cy="6" r="2.5" fill="var(--frontier)"/>
+        <circle cx="17" cy="11" r="2" fill="var(--accent)"/>
+        <circle cx="11" cy="15" r="1.5" fill="currentColor"/>
+      </svg>
+      <h1>Terminal-Bench 4.0：成本与分数</h1>
+    </div>
+    <div class="title-actions">
+      <div class="seg" id="source-seg" role="group" aria-label="数据源">
+        <button type="button" data-source="official" aria-pressed="true">官方榜单</button>
+        <button type="button" data-source="supplement" aria-pressed="false">补充</button>
+      </div>
+      <button type="button" class="btn" id="theme-btn" aria-label="切换主题">主题：跟随系统</button>
+    </div>
+  </div>
+
+  <div class="info-row" id="info-row" aria-live="off"></div>
+  <div class="sync-msg" id="sync-msg" role="status" aria-live="polite"></div>
+</header>
+
+<div class="banner" id="banner" role="note" hidden><div class="banner-inner">分数来自 Artificial Analysis 的独立评测（经 BenchLM 数据集提供），评测设置与官方榜单不同，不可与官方视图直接比较。</div></div>
+
+<main>
+  <div class="stage" id="stage">
+    <aside id="ladder" aria-label="预算梯" hidden></aside>
+
+    <section class="chart-area" id="chart-area" aria-label="散点图">
+      <div class="toolbar">
+        <div class="seg" id="metric-seg" role="group" aria-label="X 轴指标">
+          <button type="button" data-metric="cost" aria-pressed="true">成本</button>
+          <button type="button" data-metric="outTokens" aria-pressed="false">输出 token</button>
+          <button type="button" data-metric="duration" aria-pressed="false">耗时</button>
+        </div>
+        <div class="toolbar-right">
+          <label class="switch" id="best-only-label">
+            <input type="checkbox" id="best-only">
+            <span>每个模型只取最佳档</span>
+          </label>
+          <div id="filter-host" class="dropdown"></div>
+        </div>
+      </div>
+
+      <div class="legend" id="legend"></div>
+      <div class="chart-scroll" id="chart-scroll"><div id="chart"></div></div>
+      <p class="scroll-hint" id="scroll-hint">图表可在框内左右滑动</p>
+      <div class="x-title" id="x-title"></div>
+    </section>
+  </div>
+
+  <section class="dock-panel" id="dock-panel" aria-label="观测说明与数据准则">
+    <div class="dock-card">
+      <div class="dock-col dock-col-notes">
+        <div class="dock-head">
+          <svg class="dock-icon" width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/>
+            <circle cx="8" cy="8" r="2" fill="currentColor"/>
+          </svg>
+          <h2 class="dock-heading">观测口径与统计区间</h2>
+        </div>
+        <div class="notes" id="notes" aria-label="图注"></div>
+      </div>
+      <div class="dock-divider" aria-hidden="true"></div>
+      <div class="dock-col dock-col-provenance">
+        <div class="dock-head">
+          <svg class="dock-icon" width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 2.5H10.5L13.5 5.5V13.5H4V2.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+            <path d="M10.5 2.5V5.5H13.5" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+            <line x1="6.5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="6.5" y1="10.5" x2="9.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <h2 class="dock-heading">数据溯源与使用规范</h2>
+        </div>
+        <footer class="footer">
+          <p>数据来源：Terminal-Bench 4.0 官方榜单（<a href="https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/latest?tab=leaderboard&amp;leaderboard=4-0-0" target="_blank" rel="noopener noreferrer">Harbor Hub</a>）及<a href="https://www.tbench.ai/news/terminal-bench-4-0" target="_blank" rel="noopener noreferrer">方法说明</a>；模型价格、发布信息与 Artificial Analysis 分数：Data from <a href="https://benchlm.ai" target="_blank" rel="noopener noreferrer">BenchLM.ai</a>，许可 <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC 4.0</a>。本页对成本做了计算（总成本 ÷ 试验次数）并转换了格式。本软件以 PolyForm Noncommercial 1.0.0 授权，仅限非商业使用。</p>
+          <p>本页为内部参考工具，与上述数据提供方无隶属关系。</p>
+        </footer>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+<script src="vendor/d3.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

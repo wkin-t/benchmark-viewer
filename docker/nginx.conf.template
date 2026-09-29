@@ -1,0 +1,252 @@
+worker_processes auto;
+error_log /dev/stderr warn;
+pid /tmp/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include mime.types;
+    default_type application/octet-stream;
+    access_log /dev/stdout;
+
+    # 冷却与"进行中"标记放在共享内存里：所有 worker、所有访问者共用同一份状态，冷却才拦得住任何人。
+    # Lua 不读环境变量，冷却值在这里渲染成常量。
+    lua_shared_dict bv_refresh 1m;
+    init_by_lua_block {
+        package.loaded["bv_config"] = {
+            cooldown = {
+                leaderboard = __COOLDOWN_LEADERBOARD__,
+                benchlm = __COOLDOWN_BENCHLM__,
+                failure = __COOLDOWN_FAILURE__,
+            },
+            -- 大于两次上游超时之和：BenchLM 的两个文件依次取，进行中标记不能在取数途中过期。
+            lock_ttl = __LOCK_TTL__,
+        }
+    }
+
+    # 缓存里存的是上游的原样（identity）响应，压缩发生在下游，所以不同 Accept-Encoding 的客户端共用一份缓存。
+    gzip on;
+    gzip_types application/json;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_vary on;
+
+    # 上游域名在请求时解析（proxy_pass 用变量），断网重启也能起来，上游 IP 变了也能跟上。
+    resolver __RESOLVER__ valid=30s ipv6=off;
+
+    # 没有 max_size：容量不设上限（只有两三个文件），inactive 取极大值，旧数据只会被新数据替换，
+    # 不会因为一段时间没人访问就被淘汰。
+    proxy_cache_path /var/cache/bv levels=1:2 keys_zone=bv:10m inactive=__CACHE_INACTIVE__ use_temp_path=off;
+
+    # 缓存里保留上游的 Date，页面据此显示"上次同步"；不透传的话 nginx 会用当前时间覆盖它。
+    proxy_pass_header Date;
+
+    # 上游的这四类头会让 nginx 不缓存（Set-Cookie、max-age=0）或按变体分裂缓存条目（Vary），
+    # 一律忽略；同时不下发给浏览器，浏览器侧的缓存策略由本服务统一决定。
+    proxy_ignore_headers Vary Cache-Control Expires Set-Cookie;
+    proxy_hide_header Set-Cookie;
+    proxy_hide_header Cache-Control;
+    proxy_hide_header Expires;
+    proxy_hide_header Vary;
+
+    # 不向局域网页面泄露版本号与上游的身份、跨域、传输层指令：
+    # 上游的 Access-Control-* 会让浏览器把这个同源接口误当成对外开放的跨域资源。
+    # 带前缀的一族（CF-*、Access-Control-*）无法在这里通配，由 guard_header.lua 按前缀剔除。
+    server_tokens off;
+    proxy_hide_header Server;
+    proxy_hide_header X-Powered-By;
+    proxy_hide_header Alt-Svc;
+    proxy_hide_header Strict-Transport-Security;
+    proxy_hide_header Report-To;
+    proxy_hide_header NEL;
+
+    # 只有 JSON 才写缓存：上游偶尔会返回 200 的维护页或挑战页，不能让它顶掉好数据。
+    map $upstream_http_content_type $bv_no_cache {
+        default 1;
+        "~*json" 0;
+    }
+    proxy_no_cache $bv_no_cache;
+
+    # 上游出错时继续给旧数据（含 403/429，这两个是被限流或被拦截时最可能的样子），并在后台更新。
+    # 不做错误响应的负缓存：那会把好数据盖掉。
+    proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504 http_403 http_429;
+    proxy_cache_background_update on;
+
+    # 缓存过期瞬间只放一个请求去上游；锁的等待时间不小于 连接超时 + 读取超时，
+    # 否则等锁的请求会在持锁请求还没超时前就自己冲向上游。
+    proxy_cache_lock on;
+    proxy_cache_lock_timeout __LOCK_TIMEOUT__;
+    proxy_cache_lock_age __LOCK_TIMEOUT__;
+
+    proxy_connect_timeout __CONNECT_TIMEOUT__;
+    proxy_send_timeout __READ_TIMEOUT__;
+    proxy_read_timeout __READ_TIMEOUT__;
+
+    # 不透传客户端请求头：Cookie、Authorization 等不该流向第三方上游。
+    proxy_pass_request_headers off;
+    proxy_set_header Host $bv_up_host;
+    proxy_set_header User-Agent "benchmark-viewer/1.0 (internal LAN tool)";
+    proxy_set_header Accept "application/json";
+    proxy_set_header Content-Type $bv_up_ctype;
+    proxy_set_header Accept-Encoding "";
+
+    proxy_ssl_server_name on;
+    proxy_ssl_name $bv_up_ssl_name;
+    # 校验上游证书：否则同一网络里的中间人可以往缓存里塞假数据，再被整个局域网读到。
+    proxy_ssl_verify on;
+    proxy_ssl_verify_depth 3;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+
+    server {
+        listen 80 default_server;
+        server_name _;
+
+        set $bv_up_host "";
+        set $bv_up_ssl_name "";
+        set $bv_up_ctype "";
+        set $bv_upstream "";
+        # 请求体写死在配置里，公开接口与刷新用的内部接口共用这一份，避免两处漂移。
+        set $bv_leaderboard_body '{"package":"terminal-bench/terminal-bench","name":"4-0-0","page":1,"page_size":100}';
+
+        header_filter_by_lua_file /etc/bv/lua/guard_header.lua;
+        body_filter_by_lua_file /etc/bv/lua/guard_body.lua;
+
+        add_header X-Cache-Status $upstream_cache_status always;
+        add_header Cache-Control "no-cache" always;
+
+        location = /healthz {
+            access_log off;
+            default_type text/plain;
+            return 200 "ok\n";
+        }
+
+        location = /api/leaderboard {
+            if ($request_method != GET) {
+                add_header Allow "GET" always;
+                return 405;
+            }
+            set $bv_up_host "__LB_HOST__";
+            set $bv_up_ssl_name "__LB_SSL_NAME__";
+            set $bv_up_ctype "application/json";
+            set $bv_upstream "__LB_URL__";
+
+            proxy_cache bv;
+            proxy_cache_key "leaderboard";
+            proxy_cache_valid 200 __TTL_LEADERBOARD__;
+
+            proxy_method POST;
+            proxy_pass_request_body off;
+            proxy_set_body $bv_leaderboard_body;
+            proxy_pass $bv_upstream;
+        }
+
+        location = /api/benchlm/models.json {
+            if ($request_method != GET) {
+                add_header Allow "GET" always;
+                return 405;
+            }
+            set $bv_up_host "__BL_HOST__";
+            set $bv_up_ssl_name "__BL_SSL_NAME__";
+            set $bv_upstream "__BL_BASE__/models.json";
+
+            proxy_cache bv;
+            proxy_cache_key "benchlm:models";
+            proxy_cache_valid 200 __TTL_BENCHLM__;
+
+            proxy_method GET;
+            proxy_pass_request_body off;
+            proxy_pass $bv_upstream;
+        }
+
+        location = /api/benchlm/pricing.json {
+            if ($request_method != GET) {
+                add_header Allow "GET" always;
+                return 405;
+            }
+            set $bv_up_host "__BL_HOST__";
+            set $bv_up_ssl_name "__BL_SSL_NAME__";
+            set $bv_upstream "__BL_BASE__/pricing.json";
+
+            proxy_cache bv;
+            proxy_cache_key "benchlm:pricing";
+            proxy_cache_valid 200 __TTL_BENCHLM__;
+
+            proxy_method GET;
+            proxy_pass_request_body off;
+            proxy_pass $bv_upstream;
+        }
+
+        # 刷新专用的内部 location：缓存键必须与对应的公开 location 完全相同，
+        # 这样绕过缓存读取拿到的 200 JSON 才会写进同一个缓存条目。
+        location = /_refresh/leaderboard {
+            internal;
+            set $bv_up_host "__LB_HOST__";
+            set $bv_up_ssl_name "__LB_SSL_NAME__";
+            set $bv_up_ctype "application/json";
+            set $bv_upstream "__LB_URL__";
+
+            proxy_cache bv;
+            proxy_cache_key "leaderboard";
+            proxy_cache_valid 200 __TTL_LEADERBOARD__;
+            proxy_cache_bypass 1;
+
+            proxy_method POST;
+            proxy_pass_request_body off;
+            proxy_set_body $bv_leaderboard_body;
+            proxy_pass $bv_upstream;
+        }
+
+        location = /_refresh/benchlm/models {
+            internal;
+            set $bv_up_host "__BL_HOST__";
+            set $bv_up_ssl_name "__BL_SSL_NAME__";
+            set $bv_upstream "__BL_BASE__/models.json";
+
+            proxy_cache bv;
+            proxy_cache_key "benchlm:models";
+            proxy_cache_valid 200 __TTL_BENCHLM__;
+            proxy_cache_bypass 1;
+
+            proxy_method GET;
+            proxy_pass_request_body off;
+            proxy_pass $bv_upstream;
+        }
+
+        location = /_refresh/benchlm/pricing {
+            internal;
+            set $bv_up_host "__BL_HOST__";
+            set $bv_up_ssl_name "__BL_SSL_NAME__";
+            set $bv_upstream "__BL_BASE__/pricing.json";
+
+            proxy_cache bv;
+            proxy_cache_key "benchlm:pricing";
+            proxy_cache_valid 200 __TTL_BENCHLM__;
+            proxy_cache_bypass 1;
+
+            proxy_method GET;
+            proxy_pass_request_body off;
+            proxy_pass $bv_upstream;
+        }
+
+        location = /api/refresh {
+            if ($request_method != POST) {
+                add_header Allow "POST" always;
+                return 405;
+            }
+            content_by_lua_file /etc/bv/lua/refresh.lua;
+        }
+
+        # 白名单之外的 /api/ 路径一律 404，容器不能变成开放代理。
+        location ^~ /api/ {
+            return 404;
+        }
+
+        location / {
+            root /usr/share/bv/web;
+            index index.html;
+            try_files $uri $uri/ =404;
+        }
+    }
+}

@@ -1,0 +1,5 @@
+node_modules/
+.playwright-mcp/
+.remember/
+.scratch/benchmark-viewer/research/
+.scratch/*.png
