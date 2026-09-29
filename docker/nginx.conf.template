@@ -109,6 +109,10 @@ http {
         set $bv_upstream "";
         # 请求体写死在配置里，公开接口与刷新用的内部接口共用这一份，避免两处漂移。
         set $bv_leaderboard_body '{"package":"terminal-bench/terminal-bench","name":"4-0-0","page":1,"page_size":100}';
+        # 公开接口和刷新内部接口必须命中同一个缓存条目，键只在这里写一次。
+        set $bv_key_leaderboard "leaderboard";
+        set $bv_key_benchlm_models "benchlm:models";
+        set $bv_key_benchlm_pricing "benchlm:pricing";
 
         header_filter_by_lua_file /etc/bv/lua/guard_header.lua;
         body_filter_by_lua_file /etc/bv/lua/guard_body.lua;
@@ -133,7 +137,7 @@ http {
             set $bv_upstream "__LB_URL__";
 
             proxy_cache bv;
-            proxy_cache_key "leaderboard";
+            proxy_cache_key $bv_key_leaderboard;
             proxy_cache_valid 200 __TTL_LEADERBOARD__;
 
             proxy_method POST;
@@ -152,7 +156,7 @@ http {
             set $bv_upstream "__BL_BASE__/models.json";
 
             proxy_cache bv;
-            proxy_cache_key "benchlm:models";
+            proxy_cache_key $bv_key_benchlm_models;
             proxy_cache_valid 200 __TTL_BENCHLM__;
 
             proxy_method GET;
@@ -170,7 +174,7 @@ http {
             set $bv_upstream "__BL_BASE__/pricing.json";
 
             proxy_cache bv;
-            proxy_cache_key "benchlm:pricing";
+            proxy_cache_key $bv_key_benchlm_pricing;
             proxy_cache_valid 200 __TTL_BENCHLM__;
 
             proxy_method GET;
@@ -188,7 +192,7 @@ http {
             set $bv_upstream "__LB_URL__";
 
             proxy_cache bv;
-            proxy_cache_key "leaderboard";
+            proxy_cache_key $bv_key_leaderboard;
             proxy_cache_valid 200 __TTL_LEADERBOARD__;
             proxy_cache_bypass 1;
 
@@ -205,7 +209,7 @@ http {
             set $bv_upstream "__BL_BASE__/models.json";
 
             proxy_cache bv;
-            proxy_cache_key "benchlm:models";
+            proxy_cache_key $bv_key_benchlm_models;
             proxy_cache_valid 200 __TTL_BENCHLM__;
             proxy_cache_bypass 1;
 
@@ -221,7 +225,7 @@ http {
             set $bv_upstream "__BL_BASE__/pricing.json";
 
             proxy_cache bv;
-            proxy_cache_key "benchlm:pricing";
+            proxy_cache_key $bv_key_benchlm_pricing;
             proxy_cache_valid 200 __TTL_BENCHLM__;
             proxy_cache_bypass 1;
 

@@ -163,7 +163,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
   outline-offset: 2px;
 }
 
-/* 纯粹等宽数字，确保天文坐标与价格在列对齐时不产生字宽抖动 */
+/* 等宽数字，避免成本和坐标在列对齐时字宽抖动 */
 .num {
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
@@ -481,11 +481,11 @@ h1 {
 
 main { padding-top: 6px; padding-bottom: 8px; }
 
-/* 舞台：桌面端左侧预算视差标尺（320px），右侧坐标散点图 */
+/* 舞台：图在上，预算档小表在图下 */
 .stage {
   display: grid;
-  grid-template-columns: 290px minmax(0, 1fr);
-  gap: 0 24px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px 0;
   margin-top: 18px;
   align-items: start;
 }
@@ -570,7 +570,7 @@ main { padding-top: 6px; padding-bottom: 8px; }
   transform: scaleX(1.17);
 }
 
-.tier-price {
+.tier-limit {
   display: block;
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
@@ -582,7 +582,7 @@ main { padding-top: 6px; padding-bottom: 8px; }
   letter-spacing: -0.01em;
 }
 
-.tier-price .cap {
+.tier-limit .cap {
   display: inline;
   font-size: 19px;
   margin-right: 2px;
@@ -1259,7 +1259,7 @@ main { padding-top: 6px; padding-bottom: 8px; }
   margin-bottom: 0;
 }
 
-/* 平板响应式（<= 1000px）：预算标尺横向置于图表上方，三档等宽横格 */
+/* 平板：图下的三档横排 */
 @media (max-width: 1000px) {
   .stage { grid-template-columns: minmax(0, 1fr); gap: 16px 0; }
   .tiers {
@@ -1303,7 +1303,7 @@ main { padding-top: 6px; padding-bottom: 8px; }
   }
 }
 
-/* 手机响应式（<= 600px）：预算标尺三档竖排，左右结构（价格在左，详情在右） */
+/* 手机：图下三档竖排，成本阈值在左，详情在右 */
 @media (max-width: 600px) {
   .topbar, main, .banner-inner { padding-left: 16px; padding-right: 16px; }
   .tiers {
@@ -1333,7 +1333,7 @@ main { padding-top: 6px; padding-bottom: 8px; }
   .tiers li:last-child .tier { border-radius: 2px; }
   .tiers li + li .tier { border-top: 1px solid var(--line); }
   .tiers li + li .tier.is-active { box-shadow: inset 0 0 0 1px var(--frontier); }
-  .tier-price { font-size: 28px; }
+  .tier-limit { font-size: 28px; }
   .tier-body { margin-top: 0; }
   .toolbar-right { margin-left: 0; width: 100%; justify-content: space-between; position: relative; }
   .dropdown { position: static; }

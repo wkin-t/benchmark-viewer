@@ -1,4 +1,4 @@
-import { EFFORT_ORDER } from './viewmodel.js';
+import { effortShade } from './viewmodel.js';
 
 const d3 = window.d3;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -56,14 +56,6 @@ export function vendorColor(name) {
   return cssVar(`--v-${vendorSlug(name)}`) || cssVar('--v-other');
 }
 
-// “越深”通过向纸色混合的比例表达：档位越低混得越多。这样浅色主题里是变深，深色主题里是变亮，两边都保持可辨。
-function effortShade(base, effort) {
-  const idx = EFFORT_ORDER.indexOf(effort);
-  const rank = idx === -1 ? 2 : idx;
-  const mix = 0.5 * (1 - rank / (EFFORT_ORDER.length - 1));
-  return d3.interpolateRgb(base, cssVar('--paper'))(mix);
-}
-
 /* ---------- 格式化 ---------- */
 
 const dash = '—';
@@ -87,10 +79,10 @@ function fmtPrice(v) {
   return `$${Number(v.toPrecision(3)).toString()} / 百万 token`;
 }
 
-const AXIS_FORMATS = {
-  cost: (d) => `$${d}`,
-  outTokens: (d) => d3.format('~s')(d),
-  duration: (d) => d3.format(',')(d),
+const METRIC_FORMAT = {
+  cost: { axis: (d) => `$${d}`, value: (v) => fmtCost(v) },
+  outTokens: { axis: (d) => d3.format('~s')(d), value: (v) => fmtTokens(v) },
+  duration: { axis: (d) => d3.format(',')(d), value: (v) => fmtDuration(v) },
 };
 
 /* ---------- 动效：阶梯线首次绘制 ---------- */
@@ -108,7 +100,7 @@ function playFrontierIntro(path) {
   if (introStartedAt === null) introStartedAt = now;
   const elapsed = now - introStartedAt;
   if (elapsed >= INTRO_MS || reducedMotion() || typeof path.animate !== 'function') return;
-  // 阶梯线从成本最低的一端（图的右侧）起笔，所以沿路径方向画出就是自右向左。
+  // X 轴反向，数值更小的一端在图的右侧，沿路径画出就是自右向左。成本、token、耗时和单价都一样。
   path.animate(
     [
       { strokeDasharray: '1 1', strokeDashoffset: 1 },
@@ -476,16 +468,69 @@ function emptyChart(container, text) {
   container.append(h('div', { class: 'state-panel', role: 'status' }, h('p', { text })));
 }
 
+function crosshairs(svg, H, m) {
+  const node = s('g', { class: 'crosshairs' });
+  return {
+    node,
+    show(px, py) {
+      clear(node);
+      node.append(
+        s('line', { class: 'crosshair-line crosshair-x', x1: px, x2: px, y1: py, y2: H - m.bottom }),
+        s('line', { class: 'crosshair-line crosshair-y', x1: m.left, x2: px, y1: py, y2: py }),
+      );
+    },
+    clear() {
+      clear(node);
+    },
+  };
+}
+
+function labelFrame(container, W, H, m) {
+  const scrollBox = document.getElementById('chart-scroll');
+  const viewWidth = scrollBox ? scrollBox.clientWidth : container.clientWidth;
+  return {
+    scrollBox,
+    bounds: {
+      x0: 4,
+      y0: 4,
+      x1: W - 4,
+      y1: H - m.bottom,
+      visibleLeft: W > viewWidth ? Math.max(0, W - viewWidth) : undefined,
+    },
+  };
+}
+
+function appendLabels(svg, items, bounds) {
+  const placed = placeLabels(items, bounds);
+  const leadersG = s('g', { class: 'lbl-leaders' });
+  const labelsG = s('g', { class: 'lbls' });
+  items.forEach((it, i) => {
+    const pos = placed.get(i);
+    if (pos?.line) {
+      leadersG.append(s('line', {
+        class: 'lbl-line',
+        x1: pos.line.x1,
+        y1: pos.line.y1,
+        x2: pos.line.x2,
+        y2: pos.line.y2,
+      }));
+    }
+    labelsG.append(labelNode(it, pos));
+  });
+  svg.append(leadersG, labelsG);
+}
+
+function scrollChartToLowX(scrollBox) {
+  if (scrollBox && scrollBox.scrollWidth > scrollBox.clientWidth) {
+    scrollBox.scrollLeft = scrollBox.scrollWidth - scrollBox.clientWidth;
+  }
+}
+
 /* ---------- 官方视图 ---------- */
 
-// 预算梯需要知道当前图里有哪些点和预算标尺，每次重绘时更新。
-let activeChart = null;
-
-export function drawOfficialChart(container, view, options = {}) {
+export function drawOfficialChart(container, view) {
   clear(container);
   hideTip();
-  activeChart = null;
-  const showFrontier = options.showFrontier ?? true;
   if (view.points.length === 0) {
     emptyChart(
       container,
@@ -507,29 +552,8 @@ export function drawOfficialChart(container, view, options = {}) {
   y.domain([0, Math.min(100, y.domain()[1])]);
 
   const svg = makeSvg(geo, `${view.metric.axisTitle}与分数的散点图，共 ${pts.length} 个点`);
-  if (!showFrontier) svg.classList.add('hide-frontier');
-  drawAxes(svg, geo, x, y, AXIS_FORMATS[view.metric.key], y.ticks(6), x.ticks(6));
+  drawAxes(svg, geo, x, y, METRIC_FORMAT[view.metric.key].axis, y.ticks(6), x.ticks(6));
   yTitle(svg, geo, 'Terminal-Bench 4.0 分数（任务完成率）');
-
-  // 预算标尺放在点和线的下面：高亮区域只是背景，不能盖住悬停目标。
-  const marks = new Map();
-  if (view.budgetTable) {
-    const plotRight = W - m.right;
-    const plotBottom = H - m.bottom;
-    for (const { limit } of view.budgetTable) {
-      const xr = Math.min(plotRight, Math.max(m.left, x(limit)));
-      const flip = xr + 56 > plotRight;
-      const mark = s(
-        'g',
-        { class: 'budget-mark', 'data-limit': limit },
-        s('rect', { class: 'zone', x: xr, y: m.top, width: plotRight - xr, height: plotBottom - m.top }),
-        s('line', { class: 'ruler', x1: xr, x2: xr, y1: m.top - 6, y2: plotBottom }),
-        s('text', { x: flip ? xr - 6 : xr + 6, y: m.top - 8, 'text-anchor': flip ? 'end' : 'start', text: `≤$${limit}` }),
-      );
-      marks.set(limit, mark);
-      svg.append(mark);
-    }
-  }
 
   const colorOf = (p) => effortShade(vendorColor(p.org), p.effort);
 
@@ -556,30 +580,23 @@ export function drawOfficialChart(container, view, options = {}) {
   let frontierPath = null;
   if (frontierPts.length >= 2) {
     frontierPath = s('path', {
-      class: `frontier-line${showFrontier ? '' : ' is-hidden'}`,
+      class: 'frontier-line',
       pathLength: 1,
       d: straightFrontierPath(frontierPts, (p) => x(p.x), (p) => y(p.y)),
     });
-    if (!showFrontier) frontierPath.style.display = 'none';
     svg.append(frontierPath);
   }
 
-  const reticleG = s('g', { class: 'crosshairs' });
+  const hairs = crosshairs(svg, H, m);
   const overlay = s('g', { class: 'ci-bar' });
   const pointsG = s('g');
   const groups = new Map();
 
   function showCrosshairs(p) {
-    clear(reticleG);
-    const px = x(p.x);
-    const py = y(p.y);
-    reticleG.append(
-      s('line', { class: 'crosshair-line crosshair-x', x1: px, x2: px, y1: py, y2: H - m.bottom }),
-      s('line', { class: 'crosshair-line crosshair-y', x1: m.left, x2: px, y1: py, y2: py }),
-    );
+    hairs.show(x(p.x), y(p.y));
   }
   function clearCrosshairs() {
-    clear(reticleG);
+    hairs.clear();
   }
 
   function showModelFocus(model) {
@@ -671,7 +688,7 @@ export function drawOfficialChart(container, view, options = {}) {
     groups.set(p.id, g);
     pointsG.append(g);
   }
-  svg.append(reticleG, pointsG);
+  svg.append(hairs.node, pointsG);
 
   const items = pts.map((p) => {
     const it = labelItem(x(p.x), y(p.y), p.model, p.effort);
@@ -680,47 +697,17 @@ export function drawOfficialChart(container, view, options = {}) {
     it.onFrontier = p.onFrontier;
     return it;
   });
-  const scrollBox = document.getElementById('chart-scroll');
-  const viewWidth = scrollBox ? scrollBox.clientWidth : container.clientWidth;
-  const visibleLeft = W > viewWidth ? Math.max(0, W - viewWidth) : undefined;
-  const bounds = {
-    x0: 4,
-    y0: 4,
-    x1: W - 4,
-    y1: H - m.bottom,
-    visibleLeft,
-  };
-  const placed = placeLabels(items, bounds);
-
-  const leadersG = s('g', { class: 'lbl-leaders' });
-  const labelsG = s('g', { class: 'lbls' });
-  items.forEach((it, i) => {
-    const pos = placed.get(i);
-    if (pos && pos.line) {
-      leadersG.append(s('line', {
-        class: 'lbl-line',
-        x1: pos.line.x1,
-        y1: pos.line.y1,
-        x2: pos.line.x2,
-        y2: pos.line.y2,
-      }));
-    }
-    labelsG.append(labelNode(it, pos));
-  });
-  svg.append(leadersG, labelsG, overlay);
+  const { scrollBox, bounds } = labelFrame(container, W, H, m);
+  appendLabels(svg, items, bounds);
+  svg.append(overlay);
 
   container.append(svg);
-  activeChart = { view, marks, groups };
-  if (scrollBox && scrollBox.scrollWidth > scrollBox.clientWidth) {
-    scrollBox.scrollLeft = scrollBox.scrollWidth - scrollBox.clientWidth;
-  }
-  if (frontierPath && showFrontier) playFrontierIntro(frontierPath);
+  scrollChartToLowX(scrollBox);
+  if (frontierPath) playFrontierIntro(frontierPath);
 }
 
 function fmtMetricValue(key, v) {
-  if (key === 'cost') return fmtCost(v);
-  if (key === 'outTokens') return fmtTokens(v);
-  return fmtDuration(v);
+  return METRIC_FORMAT[key].value(v);
 }
 
 function drawCi(overlay, x, y, p) {
@@ -748,29 +735,13 @@ function officialTip(p) {
   ]);
 }
 
-// limit 为 null 表示恢复原状。区域外的点变淡、该档的最佳点加外圈，键盘聚焦与悬停走同一条路径。
-export function setBudgetHighlight(limit) {
-  const chart = activeChart;
-  if (!chart) return;
-  for (const [l, mark] of chart.marks) mark.classList.toggle('is-on', l === limit);
-  const entry = limit === null ? null : chart.view.budgetTable?.find((t) => t.limit === limit);
-  const bestIds = new Set((entry?.best ?? []).map((p) => p.id));
-  for (const p of chart.view.points) {
-    const g = chart.groups.get(p.id);
-    g.classList.toggle('is-best', bestIds.has(p.id));
-    g.classList.toggle('is-out', entry != null && !(p.x <= limit));
-  }
-}
-
 /* ---------- 补充视图 ---------- */
 
 const PRICE_TICKS = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500];
 
-export function drawSupplementChart(container, view, options = {}) {
+export function drawSupplementChart(container, view) {
   clear(container);
   hideTip();
-  activeChart = null;
-  const showFrontier = options.showFrontier ?? true;
   if (view.points.length === 0) {
     emptyChart(container, '没有可显示的模型：请在“厂商”筛选里选择至少一家。');
     return;
@@ -791,7 +762,6 @@ export function drawSupplementChart(container, view, options = {}) {
   const yTicks = y.ticks(6).filter((t) => t >= 0);
 
   const svg = makeSvg(geo, `输出单价与 Artificial Analysis 分数的散点图，共 ${pts.length} 个模型`);
-  if (!showFrontier) svg.classList.add('hide-frontier');
   drawAxes(svg, geo, x, y, (d) => `$${d}`, yTicks, xTicks);
   yTitle(svg, geo, 'Terminal-Bench 4.0 分数（AA 评测）');
 
@@ -801,11 +771,10 @@ export function drawSupplementChart(container, view, options = {}) {
     const xOf = (p) => x(p.price);
     const yOf = (p) => y(p.score);
     frontierPath = s('path', {
-      class: `frontier-line${showFrontier ? '' : ' is-hidden'}`,
+      class: 'frontier-line',
       pathLength: 1,
       d: straightFrontierPath(frontierPts, xOf, yOf),
     });
-    if (!showFrontier) frontierPath.style.display = 'none';
     svg.append(frontierPath);
     // 注记放在两点间距最长的一段线段上方
     let longest = { len: -1, cx: 0, cy: 0 };
@@ -813,31 +782,23 @@ export function drawSupplementChart(container, view, options = {}) {
       const len = Math.hypot(xOf(frontierPts[i + 1]) - xOf(frontierPts[i]), yOf(frontierPts[i + 1]) - yOf(frontierPts[i]));
       if (len > longest.len) longest = { len, cx: (xOf(frontierPts[i]) + xOf(frontierPts[i + 1])) / 2, cy: (yOf(frontierPts[i]) + yOf(frontierPts[i + 1])) / 2 };
     }
-    const noteEl = s('text', {
-      class: `frontier-note${showFrontier ? '' : ' is-hidden'}`,
+    svg.append(s('text', {
+      class: 'frontier-note',
       x: longest.cx,
       y: longest.cy - 10,
       'text-anchor': 'middle',
       text: '最优前沿（按单价）',
-    });
-    if (!showFrontier) noteEl.style.display = 'none';
-    svg.append(noteEl);
+    }));
   }
 
-  const reticleG = s('g', { class: 'crosshairs' });
+  const hairs = crosshairs(svg, H, m);
   const pointsG = s('g');
 
   function showCrosshairs(p) {
-    clear(reticleG);
-    const px = x(p.price);
-    const py = y(p.score);
-    reticleG.append(
-      s('line', { class: 'crosshair-line crosshair-x', x1: px, x2: px, y1: py, y2: H - m.bottom }),
-      s('line', { class: 'crosshair-line crosshair-y', x1: m.left, x2: px, y1: py, y2: py }),
-    );
+    hairs.show(x(p.price), y(p.score));
   }
   function clearCrosshairs() {
-    clear(reticleG);
+    hairs.clear();
   }
 
   for (const p of pts) {
@@ -871,7 +832,7 @@ export function drawSupplementChart(container, view, options = {}) {
     g.addEventListener('blur', () => clearCrosshairs());
     pointsG.append(g);
   }
-  svg.append(reticleG, pointsG);
+  svg.append(hairs.node, pointsG);
 
   const items = pts.map((p) => {
     const it = labelItem(x(p.price), y(p.score), p.model, null);
@@ -880,40 +841,12 @@ export function drawSupplementChart(container, view, options = {}) {
     it.onFrontier = p.onFrontier;
     return it;
   });
-  const scrollBox = document.getElementById('chart-scroll');
-  const viewWidth = scrollBox ? scrollBox.clientWidth : container.clientWidth;
-  const visibleLeft = W > viewWidth ? Math.max(0, W - viewWidth) : undefined;
-  const bounds = {
-    x0: 4,
-    y0: 4,
-    x1: W - 4,
-    y1: H - m.bottom,
-    visibleLeft,
-  };
-  const placed = placeLabels(items, bounds);
-
-  const leadersG = s('g', { class: 'lbl-leaders' });
-  const labelsG = s('g', { class: 'lbls' });
-  items.forEach((it, i) => {
-    const pos = placed.get(i);
-    if (pos && pos.line) {
-      leadersG.append(s('line', {
-        class: 'lbl-line',
-        x1: pos.line.x1,
-        y1: pos.line.y1,
-        x2: pos.line.x2,
-        y2: pos.line.y2,
-      }));
-    }
-    labelsG.append(labelNode(it, pos));
-  });
-  svg.append(leadersG, labelsG);
+  const { scrollBox, bounds } = labelFrame(container, W, H, m);
+  appendLabels(svg, items, bounds);
 
   container.append(svg);
-  if (scrollBox && scrollBox.scrollWidth > scrollBox.clientWidth) {
-    scrollBox.scrollLeft = scrollBox.scrollWidth - scrollBox.clientWidth;
-  }
-  if (frontierPath && showFrontier) playFrontierIntro(frontierPath);
+  scrollChartToLowX(scrollBox);
+  if (frontierPath) playFrontierIntro(frontierPath);
 }
 
 function supplementTip(p) {
@@ -986,31 +919,20 @@ export function setFrontierHighlight(highlight) {
 
 export function renderOfficialLegend(host, view, options = {}) {
   clear(host);
-  const showFrontier = options.showFrontier ?? true;
-  const onToggle = options.onToggleFrontier;
 
-  // 第一行：最优前沿交互切换与连线说明
   const rulesRow = h('div', { class: 'legend-row legend-rules' });
-  const frontierBtn = h(
-    'button',
-    {
-      type: 'button',
-      class: `legend-btn frontier-toggle${showFrontier ? ' is-active' : ' is-muted'}`,
-      'aria-pressed': showFrontier ? 'true' : 'false',
-      title: showFrontier ? '点击隐藏最优前沿' : '点击显示最优前沿',
-      onclick: onToggle,
-    },
-    frontierSwatch(showFrontier),
+  const frontierItem = h(
+    'span',
+    { class: 'legend-item frontier-key' },
+    frontierSwatch(true),
     h('span', { text: view.metric.legendText }),
-    h('span', { class: 'legend-action-hint', text: showFrontier ? '显示中' : '已隐藏' }),
   );
-  frontierBtn.addEventListener('mouseenter', () => options.onHoverFrontier?.(true));
-  frontierBtn.addEventListener('mouseleave', () => options.onHoverFrontier?.(false));
-  rulesRow.append(frontierBtn);
-  rulesRow.append(h('span', { class: 'legend-item', text: '同色系深浅连线：同一模型不同推理档位' }));
+  frontierItem.addEventListener('mouseenter', () => options.onHoverFrontier?.(true));
+  frontierItem.addEventListener('mouseleave', () => options.onHoverFrontier?.(false));
+  rulesRow.append(frontierItem);
+  rulesRow.append(h('span', { class: 'legend-item', text: '同色系深浅连线：同一模型的不同推理档位，颜色越深档位越高' }));
 
-  // 第二行：厂商标注芯片（支持反复点击隐藏与重新显示）
-  const vendorsRow = h('div', { class: 'legend-row legend-vendors', role: 'group', 'aria-label': '厂商筛选与图例' });
+  const vendorsRow = h('div', { class: 'legend-row legend-vendors', role: 'group', 'aria-label': '厂商图例' });
   vendorsRow.append(h('span', { class: 'legend-label', text: '厂商：' }));
 
   const allOrgs = view.filterTree
@@ -1018,35 +940,18 @@ export function renderOfficialLegend(host, view, options = {}) {
     : [...new Set(view.points.map((p) => p.org))];
 
   for (const org of allOrgs) {
-    const orgNodes = view.filterTree ? view.filterTree.filter((n) => n.org === org) : [];
-    const totalCount = orgNodes.length > 0
-      ? orgNodes.reduce((acc, n) => acc + n.total, 0)
+    const count = view.filterTree
+      ? view.filterTree.filter((n) => n.org === org).reduce((acc, n) => acc + n.total, 0)
       : view.points.filter((p) => p.org === org).length;
-    const selectedCount = orgNodes.length > 0
-      ? orgNodes.reduce((acc, n) => acc + n.selected, 0)
-      : view.points.filter((p) => p.org === org).length;
-    const isVisible = selectedCount > 0;
-
     const chip = h(
-      'button',
+      'span',
       {
-        type: 'button',
-        class: `legend-btn vendor-chip${isVisible ? ' is-active' : ' is-muted'}${options.activeVendor === org ? ' is-focused' : ''}`,
+        class: `legend-item vendor-chip${options.activeVendor === org ? ' is-focused' : ''}`,
         'data-vendor': org,
-        'aria-pressed': isVisible ? 'true' : 'false',
-        title: isVisible
-          ? `${org ?? '其他'}：${selectedCount}/${totalCount} 个配置（点击隐藏）`
-          : `${org ?? '其他'}：已隐藏（点击显示）`,
-        onclick: () => options.onSelectVendor?.(org),
       },
       h('span', { class: 'dot', style: `background:${vendorColor(org)}` }),
       h('span', { text: org ?? '其他' }),
-      h('span', {
-        class: 'chip-count num',
-        text: selectedCount === totalCount || selectedCount === 0
-          ? String(totalCount)
-          : `${selectedCount}/${totalCount}`,
-      }),
+      h('span', { class: 'chip-count num', text: String(count) }),
     );
     chip.addEventListener('mouseenter', () => options.onHoverVendor?.(org));
     chip.addEventListener('mouseleave', () => options.onHoverVendor?.(null));
@@ -1058,10 +963,7 @@ export function renderOfficialLegend(host, view, options = {}) {
 
 export function renderSupplementLegend(host, view, options = {}) {
   clear(host);
-  const showFrontier = options.showFrontier ?? true;
-  const onToggle = options.onToggleFrontier;
 
-  // 第一行：官方收录注记与最优前沿交互切换
   const rulesRow = h('div', { class: 'legend-row legend-rules' });
   const diamond = s(
     'svg',
@@ -1070,22 +972,15 @@ export function renderSupplementLegend(host, view, options = {}) {
   );
   rulesRow.append(h('span', { class: 'legend-item' }, diamond, '官方榜单也收录了此模型（这里的分数来自另一套评测）'));
 
-  const frontierBtn = h(
-    'button',
-    {
-      type: 'button',
-      class: `legend-btn frontier-toggle${showFrontier ? ' is-active' : ' is-muted'}`,
-      'aria-pressed': showFrontier ? 'true' : 'false',
-      title: showFrontier ? '点击隐藏最优前沿' : '点击显示最优前沿',
-      onclick: onToggle,
-    },
-    frontierSwatch(showFrontier),
+  const frontierItem = h(
+    'span',
+    { class: 'legend-item frontier-key' },
+    frontierSwatch(true),
     h('span', { text: '最优前沿（按单价）：没有“单价更低且分数更高”的模型' }),
-    h('span', { class: 'legend-action-hint', text: showFrontier ? '显示中' : '已隐藏' }),
   );
-  frontierBtn.addEventListener('mouseenter', () => options.onHoverFrontier?.(true));
-  frontierBtn.addEventListener('mouseleave', () => options.onHoverFrontier?.(false));
-  rulesRow.append(frontierBtn);
+  frontierItem.addEventListener('mouseenter', () => options.onHoverFrontier?.(true));
+  frontierItem.addEventListener('mouseleave', () => options.onHoverFrontier?.(false));
+  rulesRow.append(frontierItem);
 
   // 第二行：厂商标注芯片（支持反复点击隐藏与重新显示）
   const vendorsRow = h('div', { class: 'legend-row legend-vendors', role: 'group', 'aria-label': '厂商筛选与图例' });
@@ -1157,22 +1052,6 @@ export function renderSupplementNotes(host, view) {
 
 /* ---------- 预算梯 ---------- */
 
-// 悬停、键盘聚焦与点按固定三条来源合成同一个“当前档”：悬停优先，其次聚焦，最后是固定。
-const ladder = { host: null, hover: null, focus: null, pinned: null };
-
-// 图重绘后必须再调用一次，把当前档的高亮补回新图上。
-export function applyLadder() {
-  const active = ladder.hover ?? ladder.focus ?? ladder.pinned;
-  if (ladder.host) {
-    for (const btn of ladder.host.querySelectorAll('.tier')) {
-      const limit = Number(btn.dataset.limit);
-      btn.classList.toggle('is-active', limit === active);
-      btn.setAttribute('aria-pressed', String(limit === ladder.pinned));
-    }
-  }
-  setBudgetHighlight(active);
-}
-
 function tierLabel(limit, best) {
   if (best.length === 0) return `预算 ≤$${limit}，没有榜单行`;
   const rows = best.map((p) => `${p.model}，${p.framework}，${p.effort}，分数 ${fmtScore(p.score, p.ciHalf)}，成本 ${fmtCost(p.cost)}`);
@@ -1194,72 +1073,33 @@ function bestRow(p) {
   );
 }
 
-function tierButton(limit, best) {
-  const btn = h(
-    'button',
-    {
-      type: 'button',
-      class: 'tier',
-      'data-limit': limit,
-      'aria-pressed': ladder.pinned === limit ? 'true' : 'false',
-      'aria-label': tierLabel(limit, best),
-    },
-    h('span', { class: 'tier-price' }, h('span', { class: 'cap', text: '≤' }), h('span', { text: `$${limit}` })),
+function tierCard(limit, best) {
+  return h(
+    'div',
+    { class: 'tier', 'data-limit': limit },
+    h('span', { class: 'tier-limit' }, h('span', { class: 'cap', text: '≤' }), h('span', { text: `$${limit}` })),
     h('span', { class: 'tier-body' }, best.length === 0 ? h('span', { class: 'tier-none', text: dash }) : best.map(bestRow)),
   );
-  btn.addEventListener('mouseenter', () => {
-    ladder.hover = limit;
-    applyLadder();
-  });
-  btn.addEventListener('mouseleave', () => {
-    ladder.hover = null;
-    applyLadder();
-  });
-  // 鼠标点击也会让按钮获得焦点，只有键盘焦点才算“聚焦”，否则点按取消固定后高亮会一直留着。
-  btn.addEventListener('focus', () => {
-    if (btn.matches(':focus-visible')) {
-      ladder.focus = limit;
-      applyLadder();
-    }
-  });
-  btn.addEventListener('blur', () => {
-    ladder.focus = null;
-    applyLadder();
-  });
-  btn.addEventListener('click', () => {
-    ladder.pinned = ladder.pinned === limit ? null : limit;
-    applyLadder();
-  });
-  return btn;
 }
 
-// 预算梯是散点图的文字等价物：屏幕阅读器读到的就是每档最佳榜单行。
 export function renderBudgetLadder(host, table) {
-  const focusedLimit = host.contains(document.activeElement) ? document.activeElement.dataset?.limit : null;
   clear(host);
-  ladder.host = host;
-  ladder.hover = null;
-  ladder.focus = null;
   const stage = host.parentElement;
   if (table === null) {
-    ladder.pinned = null;
     host.hidden = true;
     stage?.classList.add('no-ladder');
     return;
   }
   host.hidden = false;
   stage?.classList.remove('no-ladder');
-
   host.append(
     h('h2', { class: 'ladder-title', text: '预算档内分数最高的榜单行' }),
-    h('ol', { class: 'tiers' }, table.map(({ limit, best }) => h('li', {}, tierButton(limit, best)))),
+    h('ol', { class: 'tiers' }, table.map(({ limit, best }) => h('li', { 'aria-label': tierLabel(limit, best) }, tierCard(limit, best)))),
     h('p', {
       class: 'ladder-hint',
-      text: '预算档是累计阈值（≤$10 包含 ≤$5 的行），只统计当前可见的点；分数并列时并列显示，成本更低者靠前。悬停或聚焦某一档，图中成本不超过该档的区域会亮起，点按可固定。',
+      text: '预算档是累计阈值（≤$10 包含 ≤$5 的行），只统计当前可见的点；分数并列时并列显示，成本更低者靠前。',
     }),
   );
-  if (focusedLimit) host.querySelector(`.tier[data-limit="${focusedLimit}"]`)?.focus({ preventScroll: true });
-  applyLadder();
 }
 
 /* ---------- 筛选下拉 ---------- */
@@ -1448,7 +1288,6 @@ export function supplementFilterSpec(view, handlers) {
 export function renderStatePanel(host, { title, message, actions = [], kind = 'loading' }) {
   clear(host);
   hideTip();
-  activeChart = null;
   const isError = kind === 'error';
   host.append(
     h(

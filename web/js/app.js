@@ -20,7 +20,6 @@ import {
   renderOfficialNotes,
   renderSupplementNotes,
   renderBudgetLadder,
-  applyLadder,
   renderFilterDropdown,
   officialFilterSpec,
   supplementFilterSpec,
@@ -50,7 +49,6 @@ const state = {
   cooldownUntil: 0,
   syncMessage: null,
   lastSupplementVendors: [],
-  showFrontier: true,
   activeVendor: null,
 };
 
@@ -440,37 +438,11 @@ function renderOfficial() {
   // 先摆好预算梯再画图：预算梯显隐会改变图区宽度，晚于绘图就会触发一次重绘并打断阶梯线的首次动画。
   renderBudgetLadder($('ladder'), hasPoints ? view.budgetTable : null);
   renderOfficialLegend($('legend'), view, {
-    showFrontier: state.showFrontier,
-    onToggleFrontier: () => {
-      state.showFrontier = !state.showFrontier;
-      render();
-    },
     onHoverFrontier: (hovered) => setFrontierHighlight(hovered),
     activeVendor: state.activeVendor,
     onHoverVendor: (vendor) => setVendorHighlight(vendor),
-    onSelectVendor: (org) => {
-      const tree = view.filterTree.filter((n) => n.org === org);
-      if (tree.length === 0) return;
-      const anySelected = tree.some((n) => n.selected > 0);
-      let nextFilter = { ...state.filter, models: { ...state.filter.models } };
-      for (const node of tree) {
-        const entry = nextFilter.models[node.model];
-        if (entry) {
-          const targetValue = !anySelected;
-          const updatedEfforts = Object.fromEntries(
-            Object.keys(entry.efforts).map((e) => [e, targetValue])
-          );
-          nextFilter.models[node.model] = {
-            selected: targetValue,
-            efforts: updatedEfforts,
-          };
-        }
-      }
-      update(() => (state.filter = nextFilter));
-    },
   });
-  drawOfficialChart($('chart'), view, { showFrontier: state.showFrontier });
-  applyLadder();
+  drawOfficialChart($('chart'), view);
   renderXTitle($('x-title'), view.metric.axisTitle, view.metric.tooltipHtml);
   renderOfficialNotes($('notes'), view);
 }
@@ -507,11 +479,6 @@ function renderSupplement() {
     }),
   );
   renderSupplementLegend($('legend'), view, {
-    showFrontier: state.showFrontier,
-    onToggleFrontier: () => {
-      state.showFrontier = !state.showFrontier;
-      render();
-    },
     onHoverFrontier: (hovered) => setFrontierHighlight(hovered),
     activeVendor: state.activeVendor,
     onHoverVendor: (vendor) => setVendorHighlight(vendor),
@@ -524,7 +491,7 @@ function renderSupplement() {
       });
     },
   });
-  drawSupplementChart($('chart'), view, { showFrontier: state.showFrontier });
+  drawSupplementChart($('chart'), view);
   renderXTitle($('x-title'), '输出单价（美元 / 百万 token，不是每任务成本）', null);
   renderSupplementNotes($('notes'), view);
 }

@@ -10,6 +10,7 @@ import {
   buildOfficialView,
   METRICS,
   EFFORT_ORDER,
+  effortShade,
 } from '../../web/js/viewmodel.js';
 
 const leaderboardRaw = JSON.parse(readFileSync(new URL('../fixtures/leaderboard.json', import.meta.url), 'utf8'));
@@ -18,6 +19,24 @@ const view = (over = {}) =>
   buildOfficialView({ rows: officialRows, filter: defaultFilter(officialRows), metric: 'cost', bestOnly: false, ...over });
 const astra = (effort) => `GPT-6 Astra|Codex|${effort}`;
 const LUNA = 'GPT-5.6 Luna|Codex|max';
+
+function luminance(color) {
+  const m = /rgb\((\d+), (\d+), (\d+)\)/.exec(color);
+  const lin = (c) => {
+    const x = c / 255;
+    return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+  };
+  const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])].map(lin);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+test('档位越高颜色越深', () => {
+  const base = '#0891b2';
+  const shades = ['none', 'low', 'medium', 'high', 'xhigh', 'max'].map((e) => luminance(effortShade(base, e)));
+  for (let i = 1; i < shades.length; i++) {
+    assert.ok(shades[i] < shades[i - 1], `${shades[i]} 应深于前一档 ${shades[i - 1]}`);
+  }
+});
 
 test('EFFORT_ORDER 与 METRICS 的固定文案', () => {
   assert.deepEqual(EFFORT_ORDER, ['none', 'low', 'medium', 'high', 'xhigh', 'max']);

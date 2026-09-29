@@ -145,57 +145,19 @@ describe('Benchmark Viewer 浏览器烟雾测试', () => {
     }
   });
 
-  it('悬停与键盘聚焦预算梯的某一档：图里对应区域变亮、该档最佳点高亮，离开后恢复', async (t) => {
+  it('预算档小表在图下，图上没有预算标尺', async (t) => {
     if (!browser) return t.skip(skipReason);
     await configure();
     const { page, context } = await openPage();
     try {
-      const mark10 = page.locator('.budget-mark[data-limit="10"]');
-      assert.equal(await page.locator('.budget-mark.is-on').count(), 0);
-
-      await page.locator('.tier[data-limit="10"]').hover();
-      assert.equal(await mark10.evaluate((n) => n.classList.contains('is-on')), true);
-      assert.equal(await page.locator('.pt.is-best').count(), 1);
-      assert.equal(await page.locator('.pt.is-best').getAttribute('data-id'), 'GPT-6 Astra|Codex|max');
-      assert.ok((await page.locator('.pt.is-out').count()) > 0, '区域外的点应变淡');
-
-      await page.mouse.move(5, 5);
-      assert.equal(await page.locator('.budget-mark.is-on').count(), 0);
-      assert.equal(await page.locator('.pt.is-best').count(), 0);
-
-      // 键盘：Tab 走到预算梯的按钮上，效果与悬停等效。
-      for (let i = 0; i < 30; i++) {
-        await page.keyboard.press('Tab');
-        if (await page.evaluate(() => document.activeElement?.classList.contains('tier'))) break;
-      }
-      const focusedLimit = await page.evaluate(() => document.activeElement?.dataset?.limit);
-      assert.equal(focusedLimit, '5', 'Tab 应先落在第一档');
-      assert.equal(await page.locator('.budget-mark[data-limit="5"]').evaluate((n) => n.classList.contains('is-on')), true);
-      assert.equal(await page.locator('.pt.is-best').getAttribute('data-id'), 'GPT-6 Astra|Codex|low');
-      await page.keyboard.press('Tab');
-      await page.keyboard.press('Tab');
-      assert.equal(await page.locator('.budget-mark.is-on').count(), 1, '焦点在第三档时只亮第三档');
-      await page.keyboard.press('Tab');
-      assert.equal(await page.locator('.budget-mark.is-on').count(), 0, '焦点离开预算梯后恢复');
-    } finally {
-      await context.close();
-    }
-  });
-
-  it('点按预算梯的某一档可固定高亮，再点取消', async (t) => {
-    if (!browser) return t.skip(skipReason);
-    await configure();
-    const { page, context } = await openPage();
-    try {
-      const tier = page.locator('.tier[data-limit="15"]');
-      await tier.click();
-      await page.mouse.move(5, 5);
-      assert.equal(await tier.getAttribute('aria-pressed'), 'true');
-      assert.equal(await page.locator('.budget-mark[data-limit="15"]').evaluate((n) => n.classList.contains('is-on')), true);
-      await tier.click();
-      await page.mouse.move(5, 5);
-      assert.equal(await tier.getAttribute('aria-pressed'), 'false');
-      assert.equal(await page.locator('.budget-mark.is-on').count(), 0);
+      assert.equal(await page.locator('.budget-mark').count(), 0);
+      assert.equal(await page.locator('.frontier-toggle').count(), 0);
+      const box = await page.evaluate(() => {
+        const chart = document.getElementById('chart-area').getBoundingClientRect();
+        const ladder = document.getElementById('ladder').getBoundingClientRect();
+        return { chartBottom: chart.bottom, ladderTop: ladder.top };
+      });
+      assert.ok(box.ladderTop >= box.chartBottom - 1, '预算档小表应在图的下方');
     } finally {
       await context.close();
     }
@@ -600,15 +562,11 @@ describe('Benchmark Viewer 浏览器烟雾测试', () => {
         const rects = await page.evaluate(() => {
           const tiers = [...document.querySelectorAll('.tier')].map((e) => e.getBoundingClientRect());
           const chart = document.getElementById('chart-area').getBoundingClientRect();
-          return { tiers, chart: { top: chart.top, left: chart.left } };
+          return { tiers, chart: { top: chart.top, bottom: chart.bottom, left: chart.left } };
         });
-        if (width >= 1000) {
-          assert.ok(rects.tiers[0].right <= rects.chart.left, '桌面：预算梯在图的左侧');
-        } else {
-          assert.ok(rects.tiers.every((r) => r.bottom <= rects.chart.top + 1), '平板与手机：预算梯在图的上方');
-          if (width > 600) assert.ok(Math.abs(rects.tiers[0].top - rects.tiers[2].top) < 2, '平板：三格横排');
-          else assert.ok(rects.tiers[1].top > rects.tiers[0].top, '手机：三档竖排');
-        }
+        assert.ok(rects.tiers.every((r) => r.top >= rects.chart.bottom - 1), '预算档在图的下方');
+        if (width > 600 && width <= 1000) assert.ok(Math.abs(rects.tiers[0].top - rects.tiers[2].top) < 2, '平板：三格横排');
+        if (width <= 600) assert.ok(rects.tiers[1].top > rects.tiers[0].top, '手机：三档竖排');
 
         const scroll = await page.evaluate(() => {
           const el = document.getElementById('chart-scroll');
@@ -680,23 +638,14 @@ describe('Benchmark Viewer 浏览器烟雾测试', () => {
     }
   });
 
-  it('最优前沿可通过图例按钮点击隐藏，再次点击恢复显示', async (t) => {
+  it('最优前沿一直画着，图例不能把它关掉', async (t) => {
     if (!browser) return t.skip(skipReason);
     await configure();
     const { page, context, errors } = await openPage();
     try {
-      const toggleBtn = page.locator('.frontier-toggle');
-      assert.equal(await toggleBtn.getAttribute('aria-pressed'), 'true');
+      assert.equal(await page.locator('.frontier-toggle').count(), 0);
       assert.equal(await page.locator('.frontier-line').isVisible(), true);
-
-      // 点击隐藏
-      await toggleBtn.click();
-      assert.equal(await toggleBtn.getAttribute('aria-pressed'), 'false');
-      assert.equal(await page.locator('.frontier-line').isVisible(), false);
-
-      // 再次点击恢复
-      await toggleBtn.click();
-      assert.equal(await toggleBtn.getAttribute('aria-pressed'), 'true');
+      await page.locator('.frontier-key').click();
       assert.equal(await page.locator('.frontier-line').isVisible(), true);
       assert.deepEqual(errors, []);
     } finally {
@@ -719,32 +668,16 @@ describe('Benchmark Viewer 浏览器烟雾测试', () => {
       const vendorsBox = await vendorsRow.boundingBox();
       assert.ok(rulesBox.y < vendorsBox.y, '最优前沿规则行应在厂商行上方');
 
-      // 2. 官方视图：厂商芯片点击隐藏后保持可见，再次点击恢复
       const vendorChips = page.locator('#legend .vendor-chip');
       const chipCount = await vendorChips.count();
       assert.ok(chipCount >= 2, '至少应有 2 个厂商芯片');
-
       const firstChip = vendorChips.first();
       const vendorName = await firstChip.getAttribute('data-vendor');
-      assert.ok(vendorName, '芯片应有 data-vendor');
-      assert.equal(await firstChip.getAttribute('aria-pressed'), 'true');
-
       const initialPointsCount = await page.locator(`.pt[data-org="${vendorName}"]`).count();
       assert.ok(initialPointsCount > 0, `初态应有 ${vendorName} 的点`);
-
-      // 点击隐藏
+      assert.equal(await firstChip.evaluate((el) => el.tagName), 'SPAN', '官方图例只标颜色，不筛选');
       await firstChip.click();
-      assert.equal(await vendorChips.count(), chipCount, '隐藏后厂商芯片数量不变，不能被移除');
-      assert.equal(await firstChip.getAttribute('aria-pressed'), 'false');
-      assert.ok((await firstChip.getAttribute('class')).includes('is-muted'), '隐藏后芯片应有 is-muted 样式');
-      assert.equal(await page.locator(`.pt[data-org="${vendorName}"]`).count(), 0, `${vendorName} 的点应被隐藏`);
-
-      // 再次点击恢复显示
-      await firstChip.click();
-      assert.equal(await vendorChips.count(), chipCount, '再次点击后芯片依然存在');
-      assert.equal(await firstChip.getAttribute('aria-pressed'), 'true');
-      assert.ok((await firstChip.getAttribute('class')).includes('is-active'), '恢复后芯片应有 is-active 样式');
-      assert.equal(await page.locator(`.pt[data-org="${vendorName}"]`).count(), initialPointsCount, '点应全部恢复');
+      assert.equal(await page.locator(`.pt[data-org="${vendorName}"]`).count(), initialPointsCount, '点击官方厂商图例不应改变筛选');
 
       // 3. 补充视图：同样支持两行与厂商芯片反复切换
       await page.getByRole('button', { name: '补充', exact: true }).click();

@@ -1,5 +1,29 @@
 export const EFFORT_ORDER = ['none', 'low', 'medium', 'high', 'xhigh', 'max'];
 
+function parseRgb(input) {
+  const hex = /^#([0-9a-f]{6})$/i.exec(String(input).trim());
+  if (hex) {
+    const n = hex[1];
+    return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+  }
+  const rgb = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(input);
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+  return [128, 128, 128];
+}
+
+// 档位越高越深：低档往白混，高档往黑混。不跟纸色走，避免深色主题里高档反而更亮。
+export function effortShade(base, effort) {
+  const idx = EFFORT_ORDER.indexOf(effort);
+  const rank = idx === -1 ? 2 : idx;
+  const t = rank / (EFFORT_ORDER.length - 1);
+  const [r, g, b] = parseRgb(base);
+  const towardWhite = (1 - t) * 0.5;
+  const towardBlack = t * 0.45;
+  const keep = 1 - towardWhite - towardBlack;
+  const mix = (c) => Math.round(c * keep + 255 * towardWhite);
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+}
+
 function finiteOrNull(value) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }

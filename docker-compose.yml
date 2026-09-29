@@ -1,0 +1,13 @@
+services:
+  benchmark-viewer:
+    build: .
+    image: benchmark-viewer:latest
+    container_name: benchmark-viewer
+    ports:
+      - "38088:80"
+    volumes:
+      - benchmark-viewer-cache:/var/cache/bv
+    restart: unless-stopped
+
+volumes:
+  benchmark-viewer-cache:
