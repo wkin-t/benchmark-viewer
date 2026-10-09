@@ -8,7 +8,7 @@
 
 - 语言：中文。项目规则见 `CLAUDE.md`。
 - 架构：单个 OpenResty 容器 + 静态前端 + `proxy_cache`，详见架构工单。
-- 数据源：**Y 轴（Terminal-Bench 4.0 分数）只用官方榜单（Harbor hub），不设回退**；价格、发布日期等模型级数据来自 BenchLM 官方数据集 `https://benchlm.ai/data`（JSON；CC BY-NC 4.0，需署名并附链接，仅非商业）。术语见 `CONTEXT.md`。
+- 数据源：**Y 轴（Terminal-Bench 4.0 分数）只用官方榜单（Harbor hub），不设回退**；价格、发布日期等模型级数据来自 BenchLM 官方数据集 `https://benchlm.ai/data`（JSON；CC BY-NC 4.0，需署名并附链接，仅非商业）。术语见 `GLOSSARY.md`。
 - 参考视觉：`https://deepswe.datacurve.ai/` 的散点图（气泡、厂商图标、推理档位着色、Pareto 前沿、悬停详情、指标切换）。
 - 口径红线："价格"（$/百万 token，BenchLM）与"成本"（每任务实测美元，官方接口）不可混用，轴标签和图注必须写清；补充视图的分数是 AA 独立评测，不可与官方分数混画或直接比较。
 - 数据诚实：无基线对照的结论一律声明"仅描述性"。

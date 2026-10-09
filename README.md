@@ -6,7 +6,7 @@ Terminal-Bench 4.0 成本与分数散点图。一个 OpenResty 容器同时提�
 - 补充视图：BenchLM 数据集里 Artificial Analysis 的分数与输出单价。
 - 数据由容器缓存并定时更新，上游故障时继续显示旧数据；页面上的"立即同步"按钮由服务端强制冷却。
 
-术语见 `CONTEXT.md`，行为规范见 `.scratch/benchmark-viewer/spec.md`。
+术语见 `GLOSSARY.md`，行为规范见 `.scratch/benchmark-viewer/spec.md`。
 
 ## 运行
 

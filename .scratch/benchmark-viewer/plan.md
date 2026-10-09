@@ -1,6 +1,6 @@
 # 实现计划 v2：Benchmark Viewer
 
-规范：`spec.md`（权威）。术语：项目根目录 `CONTEXT.md`。项目根目录：`C:\PersonalFiles\benchmark-viewer`（新项目，非 git 仓库）。
+规范：`spec.md`（权威）。术语：项目根目录 `GLOSSARY.md`。项目根目录：`C:\PersonalFiles\benchmark-viewer`（新项目，非 git 仓库）。
 测试夹具：`tests/fixtures/{leaderboard,models,pricing}.json`（真实上游样例的副本；实现与测试不得引用 `.scratch/research`）。
 
 ## 一、真实上游探针的发现（已验证）

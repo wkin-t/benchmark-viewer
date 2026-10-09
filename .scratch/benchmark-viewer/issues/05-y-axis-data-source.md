@@ -29,4 +29,4 @@ Blocked by:
 
 依据（来自 BenchLM 自己的数据文件）：页面 27 行是官方榜单的镜像（`displayOnly`），行 = 模型 + 智能体框架；端点里 `terminalBench4` 是折算的每模型单值，`aaTerminalBench4` 是 Artificial Analysis 的独立评测，与官方榜单只有 4 和 8 个模型重合。榜单表 27 行只对应 15 个模型。
 
-衍生：新增研究工单 06；03、04 追加被 06 阻塞。词汇表已写入项目根目录 `CONTEXT.md`。
+衍生：新增研究工单 06；03、04 追加被 06 阻塞。词汇表已写入项目根目录 `GLOSSARY.md`。

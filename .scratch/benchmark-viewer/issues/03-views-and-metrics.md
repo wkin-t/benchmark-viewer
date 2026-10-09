@@ -15,7 +15,7 @@ Blocked by:
 - Pareto 前沿的定义（单价低且分数高的非支配点）和"每个价位最好模型"的表述。
 
 产出：视图清单，每张图的轴、口径、默认设置和图上必须出现的注释。
-调用 `/grilling` 与 `/domain-modeling`；术语（价格 / 成本 / 配置 / 档位）记入 `CONTEXT.md`。
+调用 `/grilling` 与 `/domain-modeling`；术语（价格 / 成本 / 配置 / 档位）记入 `GLOSSARY.md`。
 
 ## Answer
 
