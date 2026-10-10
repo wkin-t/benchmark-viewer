@@ -7,6 +7,7 @@ import {
   clearAll,
   buildOfficialView,
   buildSupplementView,
+  officialSlugsFromLabels,
 } from './viewmodel.js';
 import { evaluateFreshness, formatAgo, summarizeRefresh } from './freshness.js';
 import { loadAll, postRefresh } from './api.js';
@@ -97,17 +98,26 @@ function mergeFilter(previous, rows) {
   return next;
 }
 
+// 官方榜单当前收录的模型名（去重），供补充视图自动推导 ◆；官方数据不可用时为空，只按静态映射表标记。
+function officialLabels() {
+  return [...new Set(state.norm?.rows.map((r) => r.model) ?? [])];
+}
+
 function warnMappingGaps() {
-  const { leaderboard, modelMap } = state.data;
+  const { leaderboard, benchlm, modelMap } = state.data;
   if (modelMap && !modelMap.ok) {
     console.warn(`模型映射表加载失败（${modelMap.error}），补充视图不会标记“官方榜单也收录”的模型`);
     return;
   }
-  if (!leaderboard?.ok || !state.norm) return;
+  if (!leaderboard?.ok || !state.norm || !benchlm?.ok) return;
   const map = modelMap?.map ?? {};
-  const missing = [...new Set(state.norm.rows.map((r) => r.model))].filter((m) => !(m in map));
+  const knownSlugs = new Set((benchlm.models?.items ?? []).map((m) => m.slug));
+  const missing = [...new Set(state.norm.rows.map((r) => r.model))].filter((m) => {
+    const candidates = [...(map[m] ?? []), ...officialSlugsFromLabels([m])];
+    return !candidates.some((slug) => knownSlugs.has(slug));
+  });
   if (missing.length > 0) {
-    console.warn(`模型映射缺失：官方榜单里的这些模型没有对应的 BenchLM slug，补充视图不会给它们标 ◆：${missing.join('、')}`);
+    console.warn(`模型映射缺失：官方榜单里的这些模型在 BenchLM 里没有可对应的 slug（静态映射与自动推导都未命中），补充视图不会给它们标 ◆：${missing.join('、')}`);
   }
 }
 
@@ -145,6 +155,7 @@ function applyLoaded(loaded) {
         pricing: next.benchlm.pricing,
         modelMap: next.modelMap?.map ?? {},
         vendorFilter: {},
+        officialLabels: officialLabels(),
       });
     } catch (err) {
       next.benchlm =
@@ -192,6 +203,7 @@ function supplementView() {
     pricing: benchlm.pricing,
     modelMap: modelMap?.map ?? {},
     vendorFilter: state.vendorFilter,
+    officialLabels: officialLabels(),
   });
 }
 

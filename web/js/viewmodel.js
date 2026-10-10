@@ -334,9 +334,28 @@ function olderTimestamp(a, b) {
   return dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : null;
 }
 
-export function buildSupplementView({ models, pricing, modelMap, vendorFilter }) {
+// 官方榜单的模型名（如 "Opus 5.5"）与 BenchLM 的 slug（如 "claude-opus-5-5"）之间有一条稳定规律：
+// 小写、空格与点号转连字符，Anthropic 系模型在 BenchLM 多一层 "claude-" 前缀。有了它，官方一收录
+// 新模型，补充视图的 ◆ 就自动跟上，不必等映射表被手动补项。只做精确 slug 相等，不做前缀或模糊
+// 匹配：GPT-6 Sol 与 GPT-5.6 Sol 这类名字贴近的模型不会互相错标。规律之外的例外（如
+// "Fable 5" → "claude-fable"，slug 里没有版本号）仍靠静态映射表兜底。
+export function officialSlugsFromLabels(labels) {
+  const slugs = new Set();
+  for (const label of labels ?? []) {
+    if (typeof label !== 'string') continue;
+    const base = label.trim().toLowerCase().replace(/[\s.]+/g, '-');
+    if (base === '') continue;
+    slugs.add(base);
+    slugs.add(`claude-${base}`);
+  }
+  return slugs;
+}
+
+export function buildSupplementView({ models, pricing, modelMap, vendorFilter, officialLabels = [] }) {
   const filter = vendorFilter ?? {};
+  // ◆ 的判据 = 静态映射表（例外与人工确认）∪ 官方模型名推导（新模型自动跟上）。
   const officialSlugs = new Set(Object.values(modelMap ?? {}).flat());
+  for (const slug of officialSlugsFromLabels(officialLabels)) officialSlugs.add(slug);
 
   // 价格文件里 slug 为 null 的项不能进 Map，否则 slug 同为 null 的模型会错配到它。
   const priceBySlug = new Map();

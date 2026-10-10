@@ -1,13 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildSupplementView } from '../../web/js/viewmodel.js';
+import { buildSupplementView, officialSlugsFromLabels } from '../../web/js/viewmodel.js';
 
 const read = (url) => JSON.parse(readFileSync(new URL(url, import.meta.url), 'utf8'));
 const models = read('../fixtures/models.json');
 const pricing = read('../fixtures/pricing.json');
 const modelMap = read('../../web/data/model-map.json');
-const real = (over = {}) => buildSupplementView({ models, pricing, modelMap, vendorFilter: {}, ...over });
+// 与 app.js 一致：把官方榜单夹具里的模型名喂给补充视图，◆ 由静态表与推导共同决定。
+const officialLabels = read('../fixtures/leaderboard.json').rows.map((r) => r.metadata.model_display.label);
+const real = (over = {}) => buildSupplementView({ models, pricing, modelMap, vendorFilter: {}, officialLabels, ...over });
 const bySlug = (v, slug) => v.points.find((p) => p.slug === slug);
 
 const item = (slug, aa, creator = 'C', extra = {}) => ({
@@ -63,7 +65,7 @@ test('夹具：没有 AA 分数的模型不出现在点或排除名单里', () =
   assert.equal(new Set(all).size, 25);
 });
 
-test('夹具：◆ 标记只按映射表精确匹配 slug，GPT-6 Sol 与 GPT-5.6 Sol 不混淆', () => {
+test('夹具：◆ 标记按静态表与推导并集精确匹配 slug，GPT-6 Sol 与 GPT-5.6 Sol 不混淆', () => {
   const v = real();
   const official = v.points.filter((p) => p.alsoOfficial).map((p) => p.slug).sort();
   assert.deepEqual(official, [
@@ -75,9 +77,40 @@ test('夹具：◆ 标记只按映射表精确匹配 slug，GPT-6 Sol 与 GPT-5.
     'gpt-6-astra',
     'grok-4-7',
   ]);
+  // 夹具官方榜里没有这几个模型（或推导出的 slug 不在画出的点里），名字贴近也不能误标：
+  // "GPT-5.6 Sol" 推导出 gpt-5-6-sol / "Opus 5" 推导出 claude-opus-5，都不等于下列 slug。
   assert.equal(bySlug(v, 'gpt-6-sol').alsoOfficial, false);
   assert.equal(bySlug(v, 'gpt-6-luna').alsoOfficial, false);
   assert.equal(bySlug(v, 'claude-opus-5-5').alsoOfficial, false);
+});
+
+test('推导：官方新模型不在静态表时按 slug 规则自动标 ◆，名字贴近的模型不误伤', () => {
+  const v = synth(
+    [item('claude-opus-5-5', 63.6), item('gpt-6-sol', 49.4), item('gpt-5-6-sol', 37.3)],
+    [priceItem('claude-opus-5-5', 10), priceItem('gpt-6-sol', 3), priceItem('gpt-5-6-sol', 5)],
+    { officialLabels: ['Opus 5.5', 'GPT-6 Sol'] },
+  );
+  assert.equal(bySlug(v, 'claude-opus-5-5').alsoOfficial, true);
+  assert.equal(bySlug(v, 'gpt-6-sol').alsoOfficial, true);
+  assert.equal(bySlug(v, 'gpt-5-6-sol').alsoOfficial, false);
+});
+
+test('推导：规律之外的例外仍靠静态表兜底（Fable 5 → claude-fable）', () => {
+  const items = [item('claude-fable', 44.5)];
+  const prices = [priceItem('claude-fable', 15)];
+  assert.equal(bySlug(synth(items, prices, { officialLabels: ['Fable 5'] }), 'claude-fable').alsoOfficial, false);
+  const withMap = synth(items, prices, { officialLabels: ['Fable 5'], modelMap: { 'Fable 5': ['claude-fable'] } });
+  assert.equal(bySlug(withMap, 'claude-fable').alsoOfficial, true);
+});
+
+test('officialSlugsFromLabels：规范化大小写、空格与点号，产出 claude- 前缀候选；坏输入跳过', () => {
+  const slugs = officialSlugsFromLabels(['Opus 5.5', 'GPT-6 Astra', '   Opus 5.5 ', '', '   ', null, 42]);
+  assert.ok(slugs.has('opus-5-5'));
+  assert.ok(slugs.has('claude-opus-5-5'));
+  assert.ok(slugs.has('gpt-6-astra'));
+  assert.ok(slugs.has('claude-gpt-6-astra'));
+  assert.ok(!slugs.has('-') && !slugs.has('claude-'));
+  assert.equal(officialSlugsFromLabels(undefined).size, 0);
 });
 
 test('夹具：按单价的最优前沿（手算）是 GPT-6 Luna、MiMo-V2.6-Pro、Claude Sonnet 5.5', () => {
@@ -193,13 +226,22 @@ test('前沿：同价更高分只留高的，同分更低价只留低的，完�
   assert.deepEqual(v.frontier.pointIds, ['cheap-high', 'twin-a', 'twin-b']);
 });
 
-test('映射表缺失或为空时没有 ◆，不抛错', () => {
-  const inputs = [{ modelMap: undefined }, { modelMap: null }, { modelMap: {} }];
+test('映射表与官方模型名都缺失或为空时没有 ◆，不抛错', () => {
+  const inputs = [
+    { modelMap: undefined, officialLabels: [] },
+    { modelMap: null, officialLabels: [] },
+    { modelMap: {}, officialLabels: [] },
+  ];
   for (const over of inputs) {
     const v = real(over);
     assert.equal(v.points.length, 20);
     assert.ok(v.points.every((p) => p.alsoOfficial === false));
   }
+});
+
+test('映射表缺失但官方模型名可用时，推导仍能标 ◆', () => {
+  // 夹具官方榜有 "Opus 5"，推导应给 claude-opus-5 打标，不因映射表挂了而整片丢失。
+  assert.equal(bySlug(real({ modelMap: {} }), 'claude-opus-5').alsoOfficial, true);
 });
 
 test('映射表里同一官方模型可以对应多个 slug', () => {
