@@ -93,6 +93,9 @@ export const FAST_ENV = {
   COOLDOWN_LEADERBOARD: '0',
   COOLDOWN_BENCHLM: '0',
   COOLDOWN_FAILURE: '0',
+  // 心跳会让容器在无人访问时也打上游，多数用例的请求计数与缓存状态断言依赖"只有测试自己访问"，
+  // 所以测试默认关掉；心跳本身在 warm.test.mjs 里单独开启验证。
+  WARM_INTERVAL: '0',
 };
 
 export async function waitFor(fn, { timeoutMs = 20000, intervalMs = 200, what = '条件' } = {}) {

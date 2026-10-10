@@ -17,6 +17,7 @@ UPSTREAM_READ_TIMEOUT="${UPSTREAM_READ_TIMEOUT:-30s}"
 COOLDOWN_LEADERBOARD="${COOLDOWN_LEADERBOARD:-600}"
 COOLDOWN_BENCHLM="${COOLDOWN_BENCHLM:-3600}"
 COOLDOWN_FAILURE="${COOLDOWN_FAILURE:-60}"
+WARM_INTERVAL="${WARM_INTERVAL:-3600}"
 
 NEWLINE=$(printf '\nx')
 NEWLINE=${NEWLINE%x}
@@ -52,6 +53,7 @@ require_match UPSTREAM_READ_TIMEOUT "$UPSTREAM_READ_TIMEOUT" "$SECONDS_PATTERN" 
 require_match COOLDOWN_LEADERBOARD "$COOLDOWN_LEADERBOARD" "$COUNT_PATTERN" "非负整数秒，0 表示无冷却"
 require_match COOLDOWN_BENCHLM "$COOLDOWN_BENCHLM" "$COUNT_PATTERN" "非负整数秒，0 表示无冷却"
 require_match COOLDOWN_FAILURE "$COOLDOWN_FAILURE" "$COUNT_PATTERN" "非负整数秒，0 表示无冷却"
+require_match WARM_INTERVAL "$WARM_INTERVAL" "$COUNT_PATTERN" "非负整数秒，0 表示不启用后台心跳"
 
 # 基址后面要拼 /models.json，尾部斜杠去掉，否则会得到 //models.json。
 UPSTREAM_BENCHLM_BASE=$(printf '%s' "$UPSTREAM_BENCHLM_BASE" | sed -e 's#/*$##')
@@ -104,5 +106,24 @@ sed \
     -e "s#__CONNECT_TIMEOUT__#$UPSTREAM_CONNECT_TIMEOUT#g" \
     -e "s#__READ_TIMEOUT__#$UPSTREAM_READ_TIMEOUT#g" \
     "$TEMPLATE" > "$CONF"
+
+# 后台心跳：nginx 的缓存只在有请求的时候才会更新——缓存过期后要等下一个访问者来触发后台刷新，
+# 没有访客数据就会一直停在旧快照。这个循环周期性触碰三个读接口，制造"有人访问"。
+# 不打 /api/refresh：那是绕过缓存强制拉取；心跳只负责让 TTL 机制按时运转，更新节奏仍由 TTL 决定。
+if [ "$WARM_INTERVAL" -gt 0 ]; then
+    (
+        # nginx 要等下面 exec 之后才起来，先等它就绪，否则首轮触碰会落空。
+        # 就绪前的 Connection refused 是预期内的重试，屏蔽到 stderr 之外，别污染容器日志。
+        until wget -q -O /dev/null http://127.0.0.1/healthz 2>/dev/null; do
+            sleep 1
+        done
+        while :; do
+            wget -q -T 60 -O /dev/null http://127.0.0.1/api/leaderboard || true
+            wget -q -T 60 -O /dev/null http://127.0.0.1/api/benchlm/models.json || true
+            wget -q -T 60 -O /dev/null http://127.0.0.1/api/benchlm/pricing.json || true
+            sleep "$WARM_INTERVAL"
+        done
+    ) &
+fi
 
 exec /usr/local/openresty/bin/openresty -g 'daemon off;'

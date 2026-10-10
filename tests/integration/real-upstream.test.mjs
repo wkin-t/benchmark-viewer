@@ -11,7 +11,9 @@ const enabled = process.env.REAL_UPSTREAM === '1';
 describe('10. 真实上游烟雾（REAL_UPSTREAM=1 开启）', { skip: enabled ? false : '未设置 REAL_UPSTREAM=1，跳过真实上游访问' }, () => {
   it('两次读取第二次命中且 Date 不变；刷新绕过缓存后 Date 更新', async () => {
     await ensureImage();
-    const proxy = await startProxy(null, { useDefaultEnv: true });
+    // 关掉后台心跳：否则它会在测试自己的读取之前先拉一遍上游，首次读取就不是 MISS，
+    // 也会让真实上游的请求量超出本测试"每个文件两次"的承诺。
+    const proxy = await startProxy(null, { useDefaultEnv: true, env: { WARM_INTERVAL: '0' } });
     const log = [];
     try {
       const first = {};
