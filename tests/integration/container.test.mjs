@@ -137,6 +137,7 @@ describe('8. 环境变量注入', () => {
     ['COOLDOWN_FAILURE', '60; evil'],
     ['WARM_INTERVAL', '-1'],
     ['WARM_INTERVAL', '1h'],
+    ['WARM_INTERVAL', '99999999999999999999'],
   ];
   it('不安全或格式错误的环境变量被入口脚本拒绝，容器不启动', async () => {
     const upstream = await startMockUpstream();

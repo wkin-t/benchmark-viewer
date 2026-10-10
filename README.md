@@ -80,7 +80,7 @@ docker run -d --name benchmark-viewer \
 | `COOLDOWN_LEADERBOARD` | `600` | 非负整数秒 | 官方榜单刷新成功后的冷却，`0` 表示无冷却 |
 | `COOLDOWN_BENCHLM` | `3600` | 非负整数秒 | BenchLM 刷新成功后的冷却 |
 | `COOLDOWN_FAILURE` | `60` | 非负整数秒 | 任一上游刷新失败后的冷却 |
-| `WARM_INTERVAL` | `3600` | 非负整数秒，`0` 表示不启用 | 后台心跳间隔，见下 |
+| `WARM_INTERVAL` | `3600` | 1-9 位非负整数秒，`0` 表示不启用 | 后台心跳间隔，见下 |
 
 用环境变量传入，例如 `docker run -e TTL_LEADERBOARD=1h -e COOLDOWN_BENCHLM=1800 ...`。
 
@@ -127,7 +127,7 @@ REAL_UPSTREAM=1 node --test tests/integration/real-upstream.test.mjs   # 可选�
 Dockerfile
 docker/
   nginx.conf.template   # 含 __占位符__，入口脚本用 sed 渲染
-  entrypoint.sh         # 校验环境变量、渲染配置、启动 OpenResty
+  entrypoint.sh         # 校验环境变量、渲染配置、启动 OpenResty 与后台心跳
   lua/refresh.lua       # POST /api/refresh
   lua/guard_*.lua       # 把上游"200 但非 JSON"变成 502
 web/                    # 静态前端

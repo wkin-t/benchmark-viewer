@@ -53,7 +53,9 @@ require_match UPSTREAM_READ_TIMEOUT "$UPSTREAM_READ_TIMEOUT" "$SECONDS_PATTERN" 
 require_match COOLDOWN_LEADERBOARD "$COOLDOWN_LEADERBOARD" "$COUNT_PATTERN" "非负整数秒，0 表示无冷却"
 require_match COOLDOWN_BENCHLM "$COOLDOWN_BENCHLM" "$COUNT_PATTERN" "非负整数秒，0 表示无冷却"
 require_match COOLDOWN_FAILURE "$COOLDOWN_FAILURE" "$COUNT_PATTERN" "非负整数秒，0 表示无冷却"
-require_match WARM_INTERVAL "$WARM_INTERVAL" "$COUNT_PATTERN" "非负整数秒，0 表示不启用后台心跳"
+# 心跳间隔限 9 位：busybox 的 [ -gt ] 对超长数字报 out of range 并判假，会让"校验通过"的值
+# 反而静默关闭心跳；9 位秒（约 31 年）已超过任何合理间隔。
+require_match WARM_INTERVAL "$WARM_INTERVAL" '^[0-9]{1,9}$' "1-9 位非负整数秒，0 表示不启用后台心跳"
 
 # 基址后面要拼 /models.json，尾部斜杠去掉，否则会得到 //models.json。
 UPSTREAM_BENCHLM_BASE=$(printf '%s' "$UPSTREAM_BENCHLM_BASE" | sed -e 's#/*$##')
@@ -112,16 +114,38 @@ sed \
 # 不打 /api/refresh：那是绕过缓存强制拉取；心跳只负责让 TTL 机制按时运转，更新节奏仍由 TTL 决定。
 if [ "$WARM_INTERVAL" -gt 0 ]; then
     (
+        # 目标是本机回环，任何代理都不该介入：容器若被注入了 http_proxy 一类变量，busybox wget
+        # 会把 127.0.0.1 也交给代理，心跳永远打不通；nginx 自己不读这些变量，不受此影响。
+        unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
         # nginx 要等下面 exec 之后才起来，先等它就绪，否则首轮触碰会落空。
-        # 就绪前的 Connection refused 是预期内的重试，屏蔽到 stderr 之外，别污染容器日志。
+        # 就绪前的 Connection refused 是预期内的重试，屏蔽到 stderr 之外；持续失败在 60 秒后补一行诊断。
+        tries=0
         until wget -q -O /dev/null http://127.0.0.1/healthz 2>/dev/null; do
+            tries=$((tries + 1))
+            if [ "$tries" -eq 60 ]; then
+                echo "bv-heartbeat: healthz 探测持续失败 60 秒，心跳暂时无法工作（若容器注入了代理变量，请确认回环地址未被代理拦截）" >&2
+            fi
             sleep 1
         done
         while :; do
-            wget -q -T 60 -O /dev/null http://127.0.0.1/api/leaderboard || true
-            wget -q -T 60 -O /dev/null http://127.0.0.1/api/benchlm/models.json || true
-            wget -q -T 60 -O /dev/null http://127.0.0.1/api/benchlm/pricing.json || true
-            sleep "$WARM_INTERVAL"
+            start=$(date +%s)
+            # 路径清单与 nginx.conf 的白名单一致；新增白名单文件时这里要同步（warm.test.mjs 覆盖三个路径的行为）。
+            failed=0
+            for path in /api/leaderboard /api/benchlm/models.json /api/benchlm/pricing.json; do
+                wget -q -T 60 -O /dev/null "http://127.0.0.1$path" 2>/dev/null || failed=$((failed + 1))
+            done
+            # 只在意"冷缓存撞上上游故障"（本地有旧数据时触碰总是 200 成功）：此时给一行语义化诊断，
+            # 而不是让 wget 的原生错误刷屏。
+            if [ "$failed" -gt 0 ]; then
+                echo "bv-heartbeat: 本轮有 $failed/3 个接口触碰失败（无可用旧缓存且上游不可达时会如此）" >&2
+            fi
+            # 周期以触碰开始时刻计时：触碰耗时超过间隔时至少歇 1 秒，不退化成连续重试。
+            elapsed=$(( $(date +%s) - start ))
+            remain=$(( WARM_INTERVAL - elapsed ))
+            if [ "$remain" -lt 1 ]; then
+                remain=1
+            fi
+            sleep "$remain"
         done
     ) &
 fi
