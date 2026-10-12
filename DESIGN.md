@@ -1,51 +1,48 @@
 # 设计系统规范 (Design System Reference)
 
-> 视觉世界：**恒星巡天图谱与赫罗主序带 (Astronomy Catalog & Hertzsprung–Russell Diagram)**
+> 视觉世界：**纸本手账 (Field Notebook)**——暖米色点阵纸、粗压缩大标题、等宽小写大写标签、芥末黄高光、斜贴贴纸与手写批注。认真记账，但不端着。
 > 定位：工程师高密度桌面端与移动端内网决策工作台，解答「每任务花费不超过 X 美元时，Terminal-Bench 4.0 能买到的最高分是多少」。
+> 页面结构：报头（徽标 · 标语 · 数据源与主题开关）→ 主标题区（左：大字标题与说明；右：数据快照卡）→ 圆角工具条 → 散点图 → 三张预算票根 → 说明栏。
 
 ---
 
 ## 1. 调色板与语义令牌 (Color Palette & Semantic Tokens)
 
-所有颜色定义于 `web/css/style.css`，严格基于语义令牌，禁止页面硬编码杂色。
+所有颜色定义于 `web/css/style.css`，严格基于语义令牌，禁止页面硬编码杂色（半透明色用 `color-mix(in srgb, var(--token) N%, transparent)`）。
 
-### 日间工作台 (Light Theme)
-蓝晒星图：纸是带蓝的晒图纸，交互是仪器青，前沿是铜金。
-- `--paper`: `#dce7f2`
-- `--ink`: `#142033`
-- `--surface`: `#f4f8fb`
-- `--surface-subtle`: `#e5eef6`
-- `--line`: `#b4c7da`
-- `--line-strong`: `#6d8aa6`
-- `--grid`: `#e8f0f7`
-- `--accent`: `#0f6a78`
-- `--frontier`: `#9a4a10`
-- `--amber`: `#8f4b12`
+### 日间纸面 (Light Theme)
+- `--paper`: `#f5f0e3`（叠一层 18px 点阵 `--dots`）
+- `--ink`: `#24231f`
+- `--surface`: `#fbf8f0`
+- `--surface-subtle`: `#efe8d6`
+- `--line`: `#ddd3bd`
+- `--line-strong`: `#8a8170`
+- `--grid`: `#ece5d3`
+- `--accent`: `#2b7a72`
+- `--frontier`: `#8a5d00`（要当小字用，取深芥末保证 4.5:1）
+- `--highlight`: `#f2c53d`（大面积高光：选中分段、硬阴影、标题下划线、贴纸星星，以及图上最优前沿线下 10px 的荧光笔底）
+- `--coral`: `#d4685a`（标题句点方块）
 - `--danger`: `#b42318`
-- `--shadow`: `0 1px 3px rgba(20, 32, 51, 0.08)`
 
-### 夜间控制台 (Dark Theme / 深空巡天)
-磷光夜空：底是蓝黑，字是淡磷光，交互是仪器青，前沿是恒星黄。
-- `--paper`: `#07141c`
-- `--ink`: `#d5efe8`
-- `--surface`: `#0e2430`
-- `--surface-subtle`: `#14303c`
-- `--line`: `#1d4c58`
-- `--line-strong`: `#3e7580`
-- `--grid`: `#0c2832`
-- `--accent`: `#3ec4c0`
-- `--frontier`: `#e8b03a`
-- `--amber`: `#e6b15c`
+### 夜间台灯 (Dark Theme)
+- `--paper`: `#1b1a17`
+- `--ink`: `#f0e9d8`
+- `--surface`: `#24221e`
+- `--surface-subtle`: `#2c2a25`
+- `--line`: `#3a372f`
+- `--line-strong`: `#7d7563`
+- `--grid`: `#2a2823`
+- `--accent`: `#6cc4b8`
+- `--frontier` / `--highlight`: `#f2c53d`
+- `--coral`: `#e88a7c`
 - `--danger`: `#ff8d7a`
-- `--shadow`: `0 2px 6px rgba(0, 0, 0, 0.5)`
 
-### 厂商光谱星谱色 (Vendor Stellar Spectral Colors)
-各厂商根据恒星光谱分类呈现独特的光谱发射色：
+### 厂商色 (Vendor Colors)
 - Anthropic: `#c2410c` (Light) / `#fb923c` (Dark)
 - OpenAI: `#0891b2` (Light) / `#22d3ee` (Dark)
 - Google: `#2563eb` (Light) / `#60a5fa` (Dark)
 - xAI: `#7c3aed` (Light) / `#a78bfa` (Dark)
-- Z-AI: `#ca8a04` (Light) / `#facc15` (Dark)
+- Z.ai: `#0f766e` (Light) / `#2dd4bf` (Dark)（黄、棕留给最优前沿，避免撞色）
 - DeepSeek: `#4f46e5` (Light) / `#818cf8` (Dark)
 - Moonshot AI: `#db2777` (Light) / `#f472b6` (Dark)
 - MiniMax: `#16a34a` (Light) / `#4ade80` (Dark)
@@ -58,7 +55,14 @@
 
 ## 2. 字体排印规范 (Typography)
 
-彻底弃用外部网络字体（如 Barlow Condensed 或 Google Fonts），采用高质量系统原生字体栈与严格等宽数字。
+不引入网络字体：正文与数字用内置 Inter / JetBrains Mono，展示与手写都走系统自带字体。
+
+- **展示标题 (`--font-display`)**：自带 Anton（`web/fonts/anton-latin.woff2`，SIL OFL），回落 Impact 等。粗压缩大写，用于主标题与预算票根大价目。自带是因为 Linux 上没有 Impact。
+- **等宽小写大写标签 (`.mono-cap`)**：JetBrains Mono 10.5px、`letter-spacing: 0.14em`、全大写，只排英文（报头标语、kicker、工具条标签）。夹在里面的中文包 `.cjk`：回到正文字体、12px、字距 0。纯装饰的英文标签一律 `aria-hidden`，可访问名称保持中文。
+- **中文最小 12px**：分段按钮的中文、快照卡字段名都不小于 12px。
+- **装饰符号**：伪元素里的 ↻、✳ 写成 `content: "↻" / ""`，读屏器不读。
+- **口径随视图**：补充视图（X 轴是每百万 token 单价）下隐藏标语 "Price per task" 与"每任务"说明。
+- **手写批注 (`--font-hand`)**：`"Segoe Print", "Bradley Hand", …, KaiTi`，只用于图上的前沿批注这类"随手一笔"。
 
 - **主体文本字体栈 (`--font-body`)**:  
   `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei UI", sans-serif`
@@ -66,7 +70,7 @@
   继承字体栈配合 `font-variant-numeric: tabular-nums`，确保小数点与多位数值在预算梯和表格中严谨对齐。
 - **信息层级**:
   - 工具主标题: `18px`, `font-weight: 700`, `letter-spacing: -0.02em`
-  - 核心大数字（预算梯大价目）: `36px`（桌面）/ `34px`（移动），`font-weight: 700`, `line-height: 1.05`
+  - 核心大数字（预算梯大价目）: Anton `34px`（桌面）/ `28px`（移动），`font-weight: 400`, `line-height: 1`。Anton 没有等宽数字特性，价目分属不同票根，不需要跨行对齐。
   - 小节标题: `14px`, `font-weight: 600`
   - 事实指标标签 / 数据项: `11px` / `15px`
   - 正文与图例文本: `13px` / `12px`
@@ -78,12 +82,13 @@
 ### 预算梯 (Budget Ladder)
 - **定位**: 成本视图首要证据，以 ≤$5、≤$10、≤$15 三档呈现。
 - **默认态**: 1px 细线边框，平整嵌入工作台。
-- **激活态 (`.is-active`)**: 全周高亮边框 `1px solid var(--frontier)` + 内部发光环 `box-shadow: inset 0 0 0 1px var(--frontier)`，严禁粗单侧边框 (`border-left: 3px`)，保持工业级精致度。
+- **布局**: 大于 600px 时三档并排为三张票根；手机上竖排，价格居左。
+- **激活态 (`.is-active`)**: 墨色全周描边 + 芥末黄硬阴影 `box-shadow: 0 0 0 1px var(--ink), 4px 4px 0 var(--highlight)`，严禁粗单侧边框 (`border-left: 3px`)。
 - **联动行为**: 悬停或聚焦某档，主图散点中非该档候选点降透明度（`opacity: 0.15`），对应最优前沿点高亮放大，并显示预算截止虚线。
 
 ### 散点图与赫罗主序带 (Scatter Plot & Main Sequence)
 - **坐标系**: X 轴为每任务成本（美元），Y 轴为基准测试准确率得分（0-100）。
-- **帕累托前沿**: 阶梯线（Step-after），严禁斜角连线或伪平滑样条线，忠实体现阶梯算力成本递增。
+- **最优前沿**: 前沿点之间直线连接（冒烟测试约束），线下垫一道 `--highlight` 荧光笔底；不用平滑样条。X 轴反向（左贵右便宜），越靠右上越划算。
 - **非前沿点**: 半透明星点（`opacity: 0.82`），带 1.5px 纯净轮廓。
 - **前沿点**: 赫罗主序金黄色实体点，带高对比外环与厂商微点。
 - **标签避让**: 动态四象限力导向防重叠算法，严格限制在视口边界内，窄屏与宽屏均不越界。

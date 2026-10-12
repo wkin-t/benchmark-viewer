@@ -26,27 +26,26 @@ try {
   if (saved === 'light' || saved === 'dark') document.documentElement.setAttribute('data-theme', saved);
 } catch (e) {}
 </script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 14V11H5V7H9V3H15' fill='none' stroke='%23e8b03a' stroke-width='2'/%3E%3Ccircle cx='15' cy='3' r='2' fill='%233ec4c0'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 14V11H5V7H9V3H15' fill='none' stroke='%23f2c53d' stroke-width='2'/%3E%3Ccircle cx='15' cy='3' r='2' fill='%23d4685a'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <a class="skip-link" href="#chart-area">跳到图表</a>
 
 <header class="topbar">
-  <div class="title-row">
+  <div class="masthead">
     <div class="brand">
-      <svg class="reticle-mark" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" fill="none">
-        <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="2 2"/>
-        <circle cx="14" cy="14" r="7" stroke="currentColor" stroke-opacity="0.55" stroke-width="1"/>
-        <line x1="14" y1="0" x2="14" y2="28" stroke="currentColor" stroke-opacity="0.45" stroke-width="1"/>
-        <line x1="0" y1="14" x2="28" y2="14" stroke="currentColor" stroke-opacity="0.45" stroke-width="1"/>
-        <path d="M4 22L11 15L17 11L24 6" stroke="var(--frontier)" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="24" cy="6" r="2.5" fill="var(--frontier)"/>
-        <circle cx="17" cy="11" r="2" fill="var(--accent)"/>
-        <circle cx="11" cy="15" r="1.5" fill="currentColor"/>
-      </svg>
-      <h1>Terminal-Bench 4.0：成本与分数</h1>
+      <span class="badge" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M3 19.5H21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M4 16L9 12.5L13 10L20 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="20" cy="4.5" r="2.2" fill="currentColor"/>
+          <circle cx="9" cy="12.5" r="1.6" fill="currentColor"/>
+        </svg>
+      </span>
+      <span class="wordmark" aria-hidden="true">TB4<br>Cost Lab</span>
     </div>
+    <p class="tagline mono-cap" aria-hidden="true">Price per task. Not per token.</p>
     <div class="title-actions">
       <div class="seg" id="source-seg" role="group" aria-label="数据源">
         <button type="button" data-source="official" aria-pressed="true">官方榜单</button>
@@ -56,8 +55,26 @@ try {
     </div>
   </div>
 
-  <div class="info-row" id="info-row" aria-live="off"></div>
-  <div class="sync-msg" id="sync-msg" role="status" aria-live="polite"></div>
+  <div class="hero">
+    <div class="hero-copy">
+      <p class="kicker mono-cap" aria-hidden="true"><span class="asterisk">✳</span>Terminal-Bench 4.0 · Small budget. Big score.</p>
+      <h1>
+        <span class="display" aria-hidden="true">Cost vs<br>Score<i class="period"></i><svg class="swash" viewBox="0 0 300 12" preserveAspectRatio="none"><path d="M2 8C60 4 140 3 210 5S280 9 298 6" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round"/></svg></span>
+        <span class="h1-zh">Terminal-Bench 4.0：成本与分数</span>
+      </h1>
+      <p class="lede">每个任务花多少钱，能换来多少分。<br>先定预算，再看谁站在最优前沿上。</p>
+      <p class="aside">X 轴从贵到便宜，点越靠右上越划算；最优前沿连起每个价位能买到的最高分。</p>
+      <span class="sticker mono-cap" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 1.2L10 5.6L14.8 6.1L11.2 9.3L12.2 14L8 11.6L3.8 14L4.8 9.3L1.2 6.1L6 5.6Z" fill="currentColor" stroke="var(--ink)" stroke-width="1" stroke-linejoin="round"/></svg>
+        100% <span class="cjk">有出处</span> · 0% <span class="cjk">拍脑袋</span>
+      </span>
+    </div>
+    <div class="hero-card">
+      <p class="card-tag mono-cap" aria-hidden="true"><b>Snapshot</b><span class="cjk">本页数据有多新</span></p>
+      <div class="info-row" id="info-row" aria-live="off"></div>
+      <div class="sync-msg" id="sync-msg" role="status" aria-live="polite"></div>
+    </div>
+  </div>
 </header>
 
 <div class="banner" id="banner" role="note" hidden><div class="banner-inner">分数来自 Artificial Analysis 的独立评测（经 BenchLM 数据集提供），评测设置与官方榜单不同，不可与官方视图直接比较。</div></div>
@@ -66,10 +83,13 @@ try {
   <div class="stage" id="stage">
     <section class="chart-area" id="chart-area" aria-label="散点图">
       <div class="toolbar">
-        <div class="seg" id="metric-seg" role="group" aria-label="X 轴指标">
-          <button type="button" data-metric="cost" aria-pressed="true">成本</button>
-          <button type="button" data-metric="outTokens" aria-pressed="false">输出 token</button>
-          <button type="button" data-metric="duration" aria-pressed="false">耗时</button>
+        <div class="toolbar-left">
+          <span class="toolbar-label mono-cap" aria-hidden="true">Set the axis</span>
+          <div class="seg" id="metric-seg" role="group" aria-label="X 轴指标">
+            <button type="button" data-metric="cost" aria-pressed="true"><span class="en" aria-hidden="true">Cost</span><span class="zh">成本</span></button>
+            <button type="button" data-metric="outTokens" aria-pressed="false"><span class="en" aria-hidden="true">Tokens</span><span class="zh">输出 token</span></button>
+            <button type="button" data-metric="duration" aria-pressed="false"><span class="en" aria-hidden="true">Time</span><span class="zh">耗时</span></button>
+          </div>
         </div>
         <div class="toolbar-right">
           <label class="switch" id="best-only-label">

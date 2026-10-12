@@ -95,7 +95,7 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
 const INTRO_MS = 700;
 let introStartedAt = null;
 
-function playFrontierIntro(path) {
+function playFrontierIntro(path, glow) {
   const now = performance.now();
   if (introStartedAt === null) introStartedAt = now;
   const elapsed = now - introStartedAt;
@@ -107,6 +107,11 @@ function playFrontierIntro(path) {
       { strokeDasharray: '1 1', strokeDashoffset: 0 },
     ],
     { duration: INTRO_MS, delay: -elapsed, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' },
+  );
+  // 荧光底不跟着描线：10px 圆头的零长度虚线会在起点留下一个黄点。等线快画完再淡入，两者共用同一个起点时间。
+  glow?.animate(
+    [{ opacity: 0 }, { opacity: 0, offset: 0.6 }, { opacity: 1 }],
+    { duration: INTRO_MS + 200, delay: -elapsed, easing: 'ease-out', fill: 'backwards' },
   );
 }
 
@@ -578,13 +583,12 @@ export function drawOfficialChart(container, view) {
 
   const frontierPts = view.frontier.pointIds.map((id) => byId.get(id));
   let frontierPath = null;
+  let frontierGlow = null;
   if (frontierPts.length >= 2) {
-    frontierPath = s('path', {
-      class: 'frontier-line',
-      pathLength: 1,
-      d: straightFrontierPath(frontierPts, (p) => x(p.x), (p) => y(p.y)),
-    });
-    svg.append(frontierPath);
+    const d = straightFrontierPath(frontierPts, (p) => x(p.x), (p) => y(p.y));
+    frontierGlow = s('path', { class: 'frontier-glow', d, 'aria-hidden': 'true' });
+    frontierPath = s('path', { class: 'frontier-line', pathLength: 1, d });
+    svg.append(frontierGlow, frontierPath);
   }
 
   const hairs = crosshairs(svg, H, m);
@@ -703,7 +707,7 @@ export function drawOfficialChart(container, view) {
 
   container.append(svg);
   scrollChartToLowX(scrollBox);
-  if (frontierPath) playFrontierIntro(frontierPath);
+  if (frontierPath) playFrontierIntro(frontierPath, frontierGlow);
 }
 
 function fmtMetricValue(key, v) {
@@ -767,15 +771,14 @@ export function drawSupplementChart(container, view) {
 
   const frontierPts = view.frontier.pointIds.map((id) => byId.get(id));
   let frontierPath = null;
+  let frontierGlow = null;
   if (frontierPts.length >= 2) {
     const xOf = (p) => x(p.price);
     const yOf = (p) => y(p.score);
-    frontierPath = s('path', {
-      class: 'frontier-line',
-      pathLength: 1,
-      d: straightFrontierPath(frontierPts, xOf, yOf),
-    });
-    svg.append(frontierPath);
+    const d = straightFrontierPath(frontierPts, xOf, yOf);
+    frontierGlow = s('path', { class: 'frontier-glow', d, 'aria-hidden': 'true' });
+    frontierPath = s('path', { class: 'frontier-line', pathLength: 1, d });
+    svg.append(frontierGlow, frontierPath);
     // 注记放在两点间距最长的一段线段上方
     let longest = { len: -1, cx: 0, cy: 0 };
     for (let i = 0; i < frontierPts.length - 1; i++) {
@@ -846,7 +849,7 @@ export function drawSupplementChart(container, view) {
 
   container.append(svg);
   scrollChartToLowX(scrollBox);
-  if (frontierPath) playFrontierIntro(frontierPath);
+  if (frontierPath) playFrontierIntro(frontierPath, frontierGlow);
 }
 
 function supplementTip(p) {
@@ -877,6 +880,8 @@ function frontierSwatch(active = true) {
   return s(
     'svg',
     { width: 28, height: 16, 'aria-hidden': 'true', class: 'swatch-svg' },
+    // 线宽写在 style 里：.frontier-glow 的 CSS 线宽会盖过 SVG 属性，10px 圆头在 28×16 里会被裁平。
+    active ? s('line', { class: 'frontier-glow', x1: 5, y1: 12, x2: 23, y2: 4, style: 'stroke-width: 6px' }) : null,
     s('line', {
       x1: 2,
       y1: 14,

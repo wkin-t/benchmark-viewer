@@ -1,6 +1,15 @@
-/* 恒星巡天图谱与赫罗主序带（Astronomy Catalog & Hertzsprung–Russell Diagram）
-   高密度天文台工作台：帕累托前沿映射为赫罗主序带（Main Sequence），各模型如恒星分布在光谱坐标中。
-   深色为夜间天文台控制台，浅色为天文手稿图谱。内置 Inter 与 JetBrains Mono 开源字体，数字完全等宽。 */
+/* 纸本手账（Field Notebook）
+   暖米色点阵纸、粗压缩大标题、等宽小写大写标签、芥末黄高光与手写批注：像一本认真记账、但不端着的实验笔记。
+   深色是夜里台灯下的同一本本子。内置 Inter 与 JetBrains Mono 开源字体，数字完全等宽。 */
+
+/* 海报字自带：Anton 与 Impact 观感几乎一致，但 Linux 上没有 Impact，回落后海报感会整个消失。 */
+@font-face {
+  font-family: 'Anton';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/anton-latin.woff2') format('woff2');
+}
 
 @font-face {
   font-family: 'Inter';
@@ -20,31 +29,36 @@
 
 :root {
   color-scheme: light;
-  --paper: #dce7f2;
-  --ink: #142033;
-  --surface: #f4f8fb;
-  --surface-subtle: #e5eef6;
-  --surface-raised: #c5d5e6;
-  --line: #b4c7da;
-  --line-strong: #6d8aa6;
-  --grid: #e8f0f7;
-  --accent: #0f6a78;
-  --accent-ink: #f3fbfc;
-  --frontier: #9a4a10;
-  --frontier-ink: #fff7ef;
+  --paper: #f5f0e3;
+  --ink: #24231f;
+  --surface: #fbf8f0;
+  --surface-subtle: #efe8d6;
+  --surface-raised: #e6dcc4;
+  --line: #ddd3bd;
+  --line-strong: #8a8170;
+  --grid: #ece5d3;
+  --accent: #2b7a72;
+  --accent-ink: #fbf8f0;
+  /* 前沿色要当小字用，芥末黄在米色纸上对比不够，这里取深芥末；大面积高光另用 --highlight。 */
+  --frontier: #8a5d00;
+  --frontier-ink: #fbf8f0;
+  --highlight: #f2c53d;
+  --highlight-ink: #24231f;
+  --coral: #d4685a;
   --amber: #8f4b12;
-  --amber-ink: #3f2208;
-  --muted: #4c6276;
-  --focus: #0f6a78;
+  --amber-ink: #4a2a06;
+  --muted: #6b6455;
+  --focus: #2b7a72;
   --danger: #b42318;
-  --shadow: 0 1px 3px rgba(20, 32, 51, 0.08);
+  --shadow: 0 1px 0 rgba(36, 35, 31, 0.05), 0 8px 20px -12px rgba(36, 35, 31, 0.28);
+  --dots: rgba(36, 35, 31, 0.07);
 
-  /* 厂商光谱恒星色系（日光手稿模式） */
+  /* 厂商色（纸面模式） */
   --v-anthropic: #b93808;
   --v-openai: #0284c7;
   --v-google: #1d4ed8;
   --v-xai: #6d28d9;
-  --v-z-ai: #a16207;
+  --v-z-ai: #0f766e;
   --v-meta: #475569;
   --v-deepseek: #4338ca;
   --v-moonshot-ai: #be185d;
@@ -58,35 +72,42 @@
   --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei UI", sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", "Cascadia Code", Consolas, Menlo, monospace;
   --font-num: 'Inter', var(--font-body);
+  /* 不引入网络字体：海报字自带 Anton；手写批注用系统字体，中文回落到系统黑体/楷体。 */
+  --font-display: 'Anton', Impact, Haettenschweiler, "Arial Narrow Bold", "Franklin Gothic Heavy", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  --font-hand: "Segoe Print", "Bradley Hand", "Chalkboard SE", KaiTi, STKaiti, cursive;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #07141c;
-  --ink: #d5efe8;
-  --surface: #0e2430;
-  --surface-subtle: #14303c;
-  --surface-raised: #1a4252;
-  --line: #1d4c58;
-  --line-strong: #3e7580;
-  --grid: #0c2832;
-  --accent: #3ec4c0;
-  --accent-ink: #042226;
-  --frontier: #e8b03a;
-  --frontier-ink: #1c1404;
+  --paper: #1b1a17;
+  --ink: #f0e9d8;
+  --surface: #24221e;
+  --surface-subtle: #2c2a25;
+  --surface-raised: #38352e;
+  --line: #3a372f;
+  --line-strong: #7d7563;
+  --grid: #2a2823;
+  --accent: #6cc4b8;
+  --accent-ink: #10201e;
+  --frontier: #f2c53d;
+  --frontier-ink: #1b1a17;
+  --highlight: #f2c53d;
+  --highlight-ink: #1b1a17;
+  --coral: #e88a7c;
   --amber: #e6b15c;
-  --amber-ink: #2a1c08;
-  --muted: #8eb4b6;
-  --focus: #7ee0d4;
+  --amber-ink: #f3dcae;
+  --muted: #a89f8b;
+  --focus: #8fd8cc;
   --danger: #ff8d7a;
-  --shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 10px 24px -12px rgba(0, 0, 0, 0.7);
+  --dots: rgba(240, 233, 216, 0.05);
 
-  /* 厂商光谱恒星色系（暗场高光辐射光谱） */
+  /* 厂商色（夜间纸面） */
   --v-anthropic: #fb923c;
   --v-openai: #22d3ee;
   --v-google: #60a5fa;
   --v-xai: #a78bfa;
-  --v-z-ai: #facc15;
+  --v-z-ai: #2dd4bf;
   --v-meta: #94a3b8;
   --v-deepseek: #818cf8;
   --v-moonshot-ai: #f472b6;
@@ -101,30 +122,34 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --paper: #07141c;
-    --ink: #d5efe8;
-    --surface: #0e2430;
-    --surface-subtle: #14303c;
-    --surface-raised: #1a4252;
-    --line: #1d4c58;
-    --line-strong: #3e7580;
-    --grid: #0c2832;
-    --accent: #3ec4c0;
-    --accent-ink: #042226;
-    --frontier: #e8b03a;
-    --frontier-ink: #1c1404;
+    --paper: #1b1a17;
+    --ink: #f0e9d8;
+    --surface: #24221e;
+    --surface-subtle: #2c2a25;
+    --surface-raised: #38352e;
+    --line: #3a372f;
+    --line-strong: #7d7563;
+    --grid: #2a2823;
+    --accent: #6cc4b8;
+    --accent-ink: #10201e;
+    --frontier: #f2c53d;
+    --frontier-ink: #1b1a17;
+    --highlight: #f2c53d;
+    --highlight-ink: #1b1a17;
+    --coral: #e88a7c;
     --amber: #e6b15c;
-    --amber-ink: #2a1c08;
-    --muted: #8eb4b6;
-    --focus: #7ee0d4;
+    --amber-ink: #f3dcae;
+    --muted: #a89f8b;
+    --focus: #8fd8cc;
     --danger: #ff8d7a;
-    --shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 10px 24px -12px rgba(0, 0, 0, 0.7);
+    --dots: rgba(240, 233, 216, 0.05);
 
     --v-anthropic: #fb923c;
     --v-openai: #22d3ee;
     --v-google: #60a5fa;
     --v-xai: #a78bfa;
-    --v-z-ai: #facc15;
+    --v-z-ai: #2dd4bf;
     --v-meta: #94a3b8;
     --v-deepseek: #818cf8;
     --v-moonshot-ai: #f472b6;
@@ -147,7 +172,9 @@ html {
 
 body {
   margin: 0;
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--dots) 1px, transparent 1.2px);
+  background-size: 18px 18px;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 13.5px;
@@ -194,55 +221,210 @@ a { color: var(--accent); text-underline-offset: 2px; }
   padding-right: 24px;
 }
 
-.topbar {
-  padding-top: 18px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+/* 等宽小写大写标签：整页的"手账页眉"语气都靠它 */
+.mono-cap {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-.title-row {
-  display: flex;
-  flex-wrap: wrap;
+/* 等宽标签里夹的中文：字距与字号回到正文，否则"有出处"会被拉成"有 出 处"，10.5px 中文也太小 */
+.mono-cap .cjk {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.topbar {
+  padding-top: 20px;
+  padding-bottom: 0;
+}
+
+/* 报头：徽标 · 标语 · 开关 */
+.masthead {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-.reticle-mark {
+.badge {
   flex: none;
-  color: var(--accent);
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--highlight);
+  color: var(--highlight-ink);
 }
 
-h1 {
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 0.98;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tagline {
   margin: 0;
-  font-family: var(--font-body);
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
+  text-align: center;
+  color: var(--muted);
 }
 
 .title-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
+  justify-content: flex-end;
+  gap: 10px 12px;
 }
 
-/* 天文仪器分段选择器（Instrument Band Selector） */
-.seg {
+/* 主标题区：左边大字，右边数据快照卡 */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 28px 48px;
+  align-items: center;
+  padding: 26px 0 24px;
+}
+
+/* 补充视图的 X 轴是每百万 token 单价，"每任务成本"口径的标语与说明在那里不成立。
+   按数据源判断而不是按横幅显隐：加载中横幅是隐藏的。 */
+body[data-source="supplement"] .tagline { visibility: hidden; }
+body[data-source="supplement"] :is(.lede, .aside) { display: none; }
+
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+
+.kicker .asterisk { font-size: 18px; line-height: 1; font-weight: 400; letter-spacing: 0; }
+
+h1 { margin: 0; font-weight: 400; }
+
+.display {
+  display: block;
+  position: relative;
+  width: fit-content;
+  font-family: var(--font-display);
+  font-size: clamp(56px, 7.4vw, 104px);
+  line-height: 0.9;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.display .period {
+  display: inline-block;
+  width: 0.2em;
+  height: 0.2em;
+  margin-left: 0.04em;
+  background: var(--coral);
+  vertical-align: baseline;
+}
+
+/* 手绘感的黄色下划线：贴着第二行底部，略微歪一点 */
+.display .swash {
+  position: absolute;
+  left: -0.02em;
+  right: 0.3em;
+  bottom: -0.16em;
+  height: 0.16em;
+  color: var(--highlight);
+  pointer-events: none;
+}
+
+.h1-zh {
+  display: block;
+  margin-top: 20px;
+  font-family: var(--font-body);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.lede {
+  margin: 2px 0 0;
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: var(--ink);
+}
+
+.aside {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.aside::before { content: ""; flex: none; width: 18px; height: 1px; margin-top: 0.8em; background: var(--muted); }
+
+.sticker {
   display: inline-flex;
   align-items: center;
-  background: var(--surface-subtle);
-  border: 1px solid var(--line-strong);
+  gap: 8px;
+  margin-top: 22px;
+  padding: 9px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  box-shadow: 3px 3px 0 var(--line);
+  transform: rotate(-2deg);
+  color: var(--ink);
+}
+
+.sticker svg { color: var(--highlight); flex: none; }
+
+/* 数据快照卡：一张斜放的便签，上面是同步事实 */
+.hero-card {
+  position: relative;
+  min-width: 0;
+}
+
+.card-tag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+
+.card-tag b {
+  padding: 3px 8px;
   border-radius: 2px;
-  padding: 1px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* 分段控件：选中项是一块芥末黄色块，像底部那条"选档位"的控制条 */
+.seg {
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px;
+  gap: 2px;
 }
 
 .seg button {
@@ -251,35 +433,40 @@ h1 {
   color: var(--muted);
   background: transparent;
   border: 0;
-  border-radius: 1px;
-  padding: 5px 12px;
-  min-height: 28px;
+  border-radius: 4px;
+  padding: 5px 14px;
+  min-height: 30px;
   cursor: pointer;
   transition: color 0.12s ease, background-color 0.12s ease;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  line-height: 1.2;
 }
 
-.seg button:hover { color: var(--ink); }
+.seg button .en {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.seg button .zh { font-size: 12px; }
+
+.seg button:hover { color: var(--ink); background: var(--surface-subtle); }
 
 .seg button[aria-pressed="true"] {
-  color: var(--ink);
+  color: var(--highlight-ink);
   font-weight: 600;
-  background: var(--surface);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: var(--highlight);
 }
 
-.seg button[aria-pressed="true"]::before {
-  content: "";
-  display: inline-block;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--frontier);
-}
+.seg button[aria-pressed="true"] .en { color: var(--highlight-ink); }
 
-/* 仪器控制按钮（Instrument Key） */
+/* 按钮：细墨线边框，悬停时投一点硬阴影 */
 .btn {
   font-family: var(--font-body);
   font-size: 12.5px;
@@ -288,20 +475,20 @@ h1 {
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: 2px;
+  border-radius: 4px;
   padding: 5px 12px;
   cursor: pointer;
-  min-height: 30px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: border-color 0.12s ease, background-color 0.12s ease;
+  transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: var(--surface-subtle);
+  border-color: var(--ink);
+  box-shadow: 2px 2px 0 var(--line);
 }
 
 .btn:disabled {
@@ -312,21 +499,22 @@ h1 {
 }
 
 .btn.primary {
-  background: var(--surface-subtle);
-  color: var(--accent);
-  border-color: var(--accent);
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
   font-weight: 600;
 }
 
 .btn.primary::before {
-  content: "⌖";
+  content: "↻" / "";
   font-size: 13px;
   line-height: 1;
 }
 
 .btn.primary:hover:not(:disabled) {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--highlight);
+  color: var(--highlight-ink);
+  border-color: var(--ink);
 }
 
 .btn.primary:disabled {
@@ -336,71 +524,57 @@ h1 {
   font-weight: 500;
 }
 
-/* 顶部遥测与观测事实胶囊条（Observatory Telemetry Strip） */
+/* 快照卡本体：信息行在卡内竖排成一张小账单 */
 .info-row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-  margin-top: 10px;
-  padding: 6px 14px;
-  background: var(--surface-subtle);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  min-height: 38px;
-}
-
-.info-row:hover {
-  border-color: var(--line-strong);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 20px 22px 18px;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--highlight);
+  min-height: 120px;
 }
 
 .facts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
   margin: 0;
   padding: 0;
 }
 
 .fact {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 0;
-  border: 0;
-}
-
-.fact:not(:last-child)::after {
-  content: "·";
-  margin-left: 10px;
-  color: var(--line-strong);
-  font-weight: 700;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  padding: 0 0 10px;
+  border-bottom: 1px dashed var(--line);
 }
 
 .fact dt {
   font-family: var(--font-body);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--muted);
   line-height: 1.4;
-  letter-spacing: 0.01em;
 }
 
 .fact dd {
   margin: 0;
   font-family: var(--font-num);
-  font-size: 12.5px;
-  line-height: 1.4;
-  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
 
 .fact dd.num {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .info-plain {
@@ -435,17 +609,15 @@ h1 {
 }
 
 #sync-btn {
-  margin-left: auto;
-  min-height: 26px;
-  padding: 3px 10px;
-  font-size: 11.5px;
-  font-weight: 500;
-  border-radius: 2px;
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 4px 14px;
+  font-size: 12px;
 }
 
 .sync-msg {
-  margin-top: 6px;
-  text-align: right;
+  margin-top: 12px;
+  text-align: left;
   min-height: 0;
 }
 
@@ -506,12 +678,13 @@ main { padding-top: 6px; padding-bottom: 8px; }
 }
 
 .ladder-title::before {
-  content: "▮";
-  font-size: 10px;
-  color: var(--frontier);
+  content: "✳" / "";
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
 }
 
-/* 垂直连续标尺轨 */
+/* 手机上是带左侧刻度轨的竖排；大于 600px 时改为三格票根（见文末） */
 .tiers {
   list-style: none;
   margin: 8px 0 0;
@@ -527,9 +700,9 @@ main { padding-top: 6px; padding-bottom: 8px; }
   color: var(--ink);
   text-align: left;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 12px 16px;
   margin-bottom: 10px;
   cursor: pointer;
   position: relative;
@@ -560,9 +733,9 @@ main { padding-top: 6px; padding-bottom: 8px; }
 }
 
 .tier.is-active {
-  border-color: var(--frontier);
-  background: rgba(154, 74, 16, 0.10);
-  box-shadow: 0 0 0 1px var(--frontier), 0 2px 8px rgba(154, 74, 16, 0.16);
+  border-color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--ink), 4px 4px 0 var(--highlight);
 }
 
 .tier.is-active::before {
@@ -572,14 +745,12 @@ main { padding-top: 6px; padding-bottom: 8px; }
 
 .tier-limit {
   display: block;
-  font-family: var(--font-num);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-  font-weight: 700;
-  font-size: 26px;
-  line-height: 1.1;
-  color: var(--frontier);
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: 0.01em;
 }
 
 .tier-limit .cap {
@@ -614,15 +785,16 @@ main { padding-top: 6px; padding-bottom: 8px; }
 
 .tag {
   display: inline-block;
-  padding: 0 5px;
-  font-family: var(--font-body);
-  font-size: 10.5px;
-  line-height: 16px;
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 17px;
+  letter-spacing: 0.06em;
   color: var(--ink);
-  background: var(--surface-subtle);
-  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+  border: 0;
   border-radius: 2px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .tier-figs {
@@ -651,14 +823,24 @@ main { padding-top: 6px; padding-bottom: 8px; }
 /* 图区（Astrometric Reticle Frame） */
 .chart-area { min-width: 0; }
 
+/* 工具条做成一条圆角控制台：左边选 X 轴，右边开关与筛选 */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
-  margin-bottom: 6px;
+  gap: 10px 16px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: 10px;
 }
+
+.toolbar-label { color: var(--muted); margin-right: 10px; }
+
+.toolbar-left { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 0; }
+.toolbar-left:has(#metric-seg[hidden]) { display: none; }
 
 .toolbar-right {
   display: flex;
@@ -743,14 +925,14 @@ main { padding-top: 6px; padding-bottom: 8px; }
 
 .effort-btn {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--ink);
   background: var(--surface-subtle);
   border: 1px solid var(--line);
   border-radius: 2px;
-  padding: 1px 6px;
+  padding: 2px 8px;
   cursor: pointer;
-  min-height: 22px;
+  min-height: 26px;
 }
 
 .effort-btn[aria-pressed="true"] {
@@ -832,13 +1014,13 @@ main { padding-top: 6px; padding-bottom: 8px; }
 
 .frontier-toggle.is-active {
   border-color: var(--frontier);
-  background: rgba(154, 74, 16, 0.10);
+  background: color-mix(in srgb, var(--frontier) 10%, transparent);
   color: var(--ink);
   font-weight: 600;
 }
 
 .frontier-toggle.is-active:hover {
-  background: rgba(154, 74, 16, 0.16);
+  background: color-mix(in srgb, var(--frontier) 16%, transparent);
 }
 
 .frontier-toggle.is-muted {
@@ -901,7 +1083,7 @@ main { padding-top: 6px; padding-bottom: 8px; }
 }
 
 .vendor-chip .chip-count {
-  font-size: 10.5px;
+  font-size: 11px;
   padding: 0 4px;
   border-radius: 8px;
   background: var(--surface-subtle);
@@ -910,13 +1092,13 @@ main { padding-top: 6px; padding-bottom: 8px; }
 
 /* 图表滚动容器：天文坐标视窗（Astrometric Coordinate Stage） */
 .chart-scroll {
-  margin-top: 8px;
+  margin-top: 10px;
   overflow-x: auto;
   overflow-y: hidden;
-  border-radius: 4px;
+  border-radius: 8px;
   background: var(--surface);
-  border: 1px solid var(--line-strong);
-  box-shadow: inset 0 0 0 1px var(--line);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
   position: relative;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
@@ -1025,9 +1207,9 @@ main { padding-top: 6px; padding-bottom: 8px; }
 
 /* 预算梯双向联动 */
 .tier.linked-highlight {
-  border-color: var(--frontier) !important;
-  background: rgba(154, 74, 16, 0.10) !important;
-  box-shadow: 0 0 0 1px var(--frontier), 0 2px 8px rgba(154, 74, 16, 0.16);
+  border-color: var(--ink) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 1px var(--ink), 4px 4px 0 var(--highlight);
 }
 .tier.linked-highlight::before {
   background: var(--frontier);
@@ -1065,7 +1247,18 @@ main { padding-top: 6px; padding-bottom: 8px; }
   pointer-events: none;
 }
 
-/* 帕累托主序带连接线 */
+/* 最优前沿下垫一道荧光笔，和参考图里划重点的那支黄笔是同一个意思 */
+.frontier-glow {
+  fill: none;
+  stroke: var(--highlight);
+  stroke-opacity: 0.5;
+  stroke-width: 10;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* 最优前沿连接线 */
 .frontier-line {
   fill: none;
   stroke: var(--frontier);
@@ -1074,12 +1267,13 @@ main { padding-top: 6px; padding-bottom: 8px; }
   stroke-linecap: round;
 }
 
+/* 前沿批注用手写体，像有人在图上随手圈了一句 */
 .frontier-note {
   fill: var(--frontier);
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-family: var(--font-hand);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
   paint-order: stroke;
   stroke: var(--surface);
   stroke-width: 3px;
@@ -1148,12 +1342,11 @@ main { padding-top: 6px; padding-bottom: 8px; }
 .dock-card {
   display: grid;
   grid-template-columns: 1fr 1px 1fr;
-  gap: 0 24px;
-  background: var(--surface);
+  gap: 0 32px;
+  background: var(--surface-subtle);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 18px 22px;
-  box-shadow: var(--shadow);
+  border-radius: 10px;
+  padding: 22px 26px;
 }
 
 .dock-col {
@@ -1161,9 +1354,9 @@ main { padding-top: 6px; padding-bottom: 8px; }
 }
 
 .dock-divider {
-  background: var(--line);
-  width: 1px;
+  width: 0;
   height: 100%;
+  border-left: 1px dashed var(--line-strong);
 }
 
 .dock-head {
@@ -1182,11 +1375,13 @@ main { padding-top: 6px; padding-bottom: 8px; }
 .dock-heading {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--ink);
 }
+
+.dock-icon { color: var(--ink); }
 
 .notes {
   margin: 0;
@@ -1292,7 +1487,13 @@ main { padding-top: 6px; padding-bottom: 8px; }
   .ladder-hint { max-width: 68ch; }
 }
 
+@media (max-width: 1000px) {
+  .hero { grid-template-columns: minmax(0, 1fr); padding: 26px 0 40px; }
+}
+
 @media (max-width: 900px) {
+  .masthead { grid-template-columns: auto 1fr; }
+  .tagline { display: none; }
   .dock-card {
     grid-template-columns: 1fr;
     gap: 16px 0;
@@ -1339,11 +1540,36 @@ main { padding-top: 6px; padding-bottom: 8px; }
   .dropdown { position: static; }
   .dropdown-panel { left: 0; right: 0; width: auto; }
   .scroll-hint { display: block; }
-  .info-row { padding: 8px 10px; }
-  .facts { gap: 4px 10px; }
-  #sync-btn { margin-left: 0; width: 100%; }
-  .sync-msg { text-align: center; }
+  .masthead { grid-template-columns: minmax(0, 1fr); }
+  .title-actions { justify-content: flex-start; }
+  .display { font-size: clamp(44px, 15vw, 64px); }
+  .h1-zh { margin-top: 20px; font-size: 17px; }
+  .lede { font-size: 14.5px; }
+  .info-row { padding: 16px; box-shadow: 4px 4px 0 var(--highlight); }
+  .facts { gap: 10px 14px; }
+  .fact dd, .fact dd.num { font-size: 18px; }
+  #sync-btn { width: 100%; }
+  .toolbar { padding: 10px; }
+  .toolbar-label { display: none; }
   .stage { margin-top: 16px; }
+}
+
+/* 桌面与平板：三档并排成三张票根，不再拉满整行 */
+@media (min-width: 601px) {
+  .tiers {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    border: 0;
+    padding: 0;
+  }
+  /* 首尾两格要一并列出：平板段里 li:first-child / li:last-child 的单侧圆角更具体，不写会漏网 */
+  .tier,
+  .tiers li + li .tier,
+  .tiers li:first-child .tier,
+  .tiers li:last-child .tier { height: 100%; margin: 0; border: 1px solid var(--line-strong); border-radius: 6px; }
+  .tiers li + li .tier.is-active { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink), 4px 4px 0 var(--highlight); }
+  .tier::before { display: none; }
 }
 
 @media (pointer: coarse) {

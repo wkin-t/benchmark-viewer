@@ -4,6 +4,9 @@ Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
 JetBrains Mono（本目录 jetbrains-mono-latin.woff2 为其拉丁子集）
 Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
 
+Anton（本目录 anton-latin.woff2 为其拉丁子集）
+Copyright 2020 The Anton Project Authors (https://github.com/googlefonts/AntonFont.git)
+
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
 https://openfontlicense.org

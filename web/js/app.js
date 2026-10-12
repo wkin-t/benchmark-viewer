@@ -509,6 +509,7 @@ function renderSupplement() {
 }
 
 function syncControls() {
+  document.body.dataset.source = state.source;
   for (const btn of document.querySelectorAll('#source-seg button')) {
     btn.setAttribute('aria-pressed', String(btn.dataset.source === state.source));
   }

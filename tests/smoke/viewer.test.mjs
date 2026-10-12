@@ -520,7 +520,7 @@ describe('Benchmark Viewer 浏览器烟雾测试', () => {
       assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'dark');
       assert.equal(await page.evaluate(() => localStorage.getItem('bv-theme')), 'dark');
       const paperDark = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-      assert.equal(paperDark, 'rgb(7, 20, 28)');
+      assert.equal(paperDark, 'rgb(27, 26, 23)');
       await page.reload();
       await page.locator('.pt').first().waitFor();
       assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'dark');
