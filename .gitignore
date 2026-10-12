@@ -1,4 +1,5 @@
 node_modules/
+dist/
 .playwright-mcp/
 .remember/
 .scratch/benchmark-viewer/research/

@@ -6,6 +6,7 @@
   "type": "module",
   "description": "Terminal-Bench 4.0 成本与分数散点图（局域网内部工具）",
   "scripts": {
+    "build": "node scripts/build.mjs",
     "test:unit": "node --test \"tests/unit/*.test.js\"",
     "test:integration": "node --test --test-concurrency=1 \"tests/integration/*.test.mjs\"",
     "test:smoke": "node --test --test-concurrency=1 \"tests/smoke/*.test.mjs\"",
